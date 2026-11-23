@@ -59,6 +59,10 @@ async function render() {
 }
 
 $("settings").addEventListener("click", () => chrome.runtime.openOptionsPage?.());
+$("wrapped").addEventListener("click", () => {
+  chrome.tabs.create({ url: chrome.runtime.getURL("src/wrapped/wrapped.html") });
+  window.close();
+});
 
 // Live-update while the popup is open.
 chrome.storage.onChanged.addListener((_, area) => area === "local" && render());

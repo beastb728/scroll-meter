@@ -14,6 +14,7 @@ function trim(n, digits) {
 /** Human-readable distance, e.g. "142 m", "1.24 km", "38 cm", "0.8 mi". */
 export function formatDistance(meters, units = "metric") {
   const m = Math.max(0, meters || 0);
+  if (m === 0) return units === "imperial" ? "0 ft" : "0 m";
   if (units === "imperial") {
     const ft = m / M_PER_FT;
     if (ft < 1000) return `${trim(ft, ft < 10 ? 1 : 0)} ft`;

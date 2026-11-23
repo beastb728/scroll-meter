@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Scroll Wrapped · Scroll Meter</title>
+    <link rel="icon" href="../../icons/icon32.png" />
+    <link rel="stylesheet" href="../ui/base.css" />
+    <link rel="stylesheet" href="wrapped.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="preview">
+        <canvas id="card" aria-label="Your weekly Scroll Wrapped card"></canvas>
+      </section>
+
+      <aside class="controls">
+        <div class="brand"><img src="../../icons/icon48.png" alt="" width="36" height="36" /> Scroll Wrapped</div>
+        <p id="demo-note" class="demo" hidden>Showing demo data.</p>
+
+        <div class="group">
+          <div class="group-label">Week</div>
+          <div class="week-nav">
+            <button id="prev" class="ghost" aria-label="Previous week">◀</button>
+            <span id="range" class="range"></span>
+            <button id="next" class="ghost" aria-label="Next week">▶</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-label">Style</div>
+          <div class="chips" data-key="theme">
+            <button class="chip" data-value="poster">Poster</button>
+            <button class="chip" data-value="receipt">Receipt</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-label">Size</div>
+          <div class="chips" data-key="format">
+            <button class="chip" data-value="story">Story 9:16</button>
+            <button class="chip" data-value="square">Square 1:1</button>
+          </div>
+          <p class="hint">Story fits Instagram Stories and WhatsApp Status. Square fits feeds, X and Reddit.</p>
+        </div>
+
+        <div class="actions">
+          <button id="download" class="primary">Download PNG</button>
+          <button id="copy" class="ghost">Copy image</button>
+          <span id="toast" class="toast" role="status"></span>
+        </div>
+
+        <p class="privacy">🔒 The card is drawn on your device. Nothing is uploaded unless you share it yourself.</p>
+      </aside>
+    </main>
+    <script type="module" src="wrapped.js"></script>
+  </body>
+</html>
