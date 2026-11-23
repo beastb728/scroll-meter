@@ -5,7 +5,7 @@
   "description": "Chrome extension that measures how far you scroll and turns it into funny real-world comparisons.",
   "type": "module",
   "scripts": {
-    "test": "node --test tests/",
+    "test": "node --test \"tests/*.test.mjs\"",
     "icons": "node scripts/make-icons.mjs"
   },
   "license": "MIT"

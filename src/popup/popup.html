@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Scroll Meter</title>
+    <link rel="stylesheet" href="../ui/base.css" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand"><img src="../../icons/icon32.png" alt="" width="20" height="20" /> Scroll Meter</div>
+      <button id="settings" class="icon-btn" hidden title="Settings" aria-label="Settings">⚙︎</button>
+    </header>
+
+    <section class="hero">
+      <div class="label">Today you scrolled</div>
+      <div id="today" class="big">0 m</div>
+      <div id="compare" class="compare"></div>
+    </section>
+
+    <section id="site-status" class="site-status" hidden></section>
+
+    <section class="card">
+      <div class="card-head"><h2>Top sites today</h2></div>
+      <ol id="sites" class="sites"></ol>
+      <p id="sites-empty" class="empty" hidden>Nothing yet. Go scroll something (or don't).</p>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Last 7 days</h2>
+        <span id="week-total" class="muted"></span>
+      </div>
+      <canvas id="chart" width="300" height="120" aria-label="Distance scrolled per day, last 7 days"></canvas>
+    </section>
+
+    <footer class="privacy">🔒 Only domain names and distances, stored on this device. Nothing leaves your browser.</footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
