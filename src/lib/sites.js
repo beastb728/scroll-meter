@@ -16,7 +16,9 @@ export const PRESETS = [
   { name: "Hacker News", domains: ["news.ycombinator.com"] },
 ];
 
-export const ALL_SITES = ["http://*/*", "https://*/*"];
+// Must match optional_host_permissions in manifest.json exactly: Chrome refuses requests
+// for patterns the manifest doesn't cover, and "*://" is not covered by "http://" + "https://".
+export const ALL_SITES = ["*://*/*"];
 
 /** Match patterns covering a domain and its subdomains. */
 export function originPatterns(domains) {

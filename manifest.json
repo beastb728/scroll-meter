@@ -10,8 +10,7 @@
     "alarms"
   ],
   "optional_host_permissions": [
-    "http://*/*",
-    "https://*/*"
+    "*://*/*"
   ],
   "action": {
     "default_title": "Scroll Meter",
