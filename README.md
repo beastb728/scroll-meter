@@ -39,7 +39,7 @@ for an evening covers the height of a skyscraper, and a number like "412 m" land
 
 ## Features
 
-| | |
+| Feature | What you get |
 | --- | --- |
 | **Daily distance** | Every pixel you scroll, up and down, converted to meters (or feet) and compared to something you can picture. |
 | **The climb** | A ruler in the popup and a strip of tape on the page count down to the next landmark, and mark it when you pass one. |
@@ -150,21 +150,18 @@ Open `src/wrapped/wrapped.html?demo=1` inside the extension to render the weekly
 
 ### Architecture
 
-```mermaid
-flowchart LR
-  subgraph Page["Site you opted in to"]
-    CS["content.js<br/>measures scrolling<br/>tape overlay + nudge"]
-  end
-  subgraph Worker["Service worker"]
-    BG["background.js<br/>serialized writes<br/>records, badge, limits"]
-  end
-  ST[("chrome.storage.local")]
-  UI["Popup · Settings · Weekly card"]
-
-  CS -- "batched every 3 s" --> BG
-  BG -- "today's total, milestones, nudges" --> CS
-  BG --> ST
-  ST --> UI
+```
+┌────────────────────────────┐                                ┌────────────────────────────┐
+│ content.js                 │   scroll batches, every 3 s    │ background.js              │
+│ runs on sites you pick     │  ────────────────────────────► │ service worker             │
+│ measures, overlay, nudge   │  ◄──────────────────────────── │ writes, records, badge     │
+└────────────────────────────┘   total, landmarks, nudges     └────────────────────────────┘
+                                                                            │ one write at a time
+                                                                            ▼
+┌────────────────────────────┐                                ┌────────────────────────────┐
+│ popup · settings ·         │             reads              │ chrome.storage.local       │
+│ weekly card                │  ◄──────────────────────────── │ on your device only        │
+└────────────────────────────┘                                └────────────────────────────┘
 ```
 
 ### Project layout
