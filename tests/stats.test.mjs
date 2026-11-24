@@ -51,3 +51,20 @@ test("roastTitle covers the main personalities", () => {
   assert.equal(roastTitle({ ...base, totalMeters: 500, totalPx: 100, worstSite: { site: "foo.dev", px: 90 } }).title, "One-Site Wonder");
   assert.equal(roastTitle({ ...base, totalMeters: 300, totalPx: 100, worstSite: { site: "a", px: 10 } }).title, "Casual Thumb Athlete");
 });
+
+test("summarize rolls up records across days", () => {
+  const keys = ["2026-11-23", "2026-11-24"];
+  const days = { "2026-11-23": { "a.com": 1000 }, "2026-11-24": { "b.com": 3000 } };
+  const metas = {
+    "2026-11-23": { upPx: 100, peakPxS: 3779.5276, binge: { site: "a.com", ms: 60_000, px: 900 } },
+    "2026-11-24": { upPx: 300, peakPxS: 1000, binge: { site: "b.com", ms: 30_000, px: 3000 } },
+  };
+  const s = summarize(keys, days, {}, metas);
+  assert.equal(s.upShare, 0.1);
+  assert.ok(Math.abs(s.topSpeed - 1) < 1e-6);
+  assert.equal(s.binge.site, "a.com");
+  assert.equal(s.binge.day, "2026-11-23");
+  const empty = summarize(keys, days);
+  assert.equal(empty.binge, null);
+  assert.equal(empty.topSpeed, 0);
+});

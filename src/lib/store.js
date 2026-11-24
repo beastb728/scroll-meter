@@ -3,6 +3,7 @@
 // Storage shape (chrome.storage.local):
 //   "YYYY-MM-DD":       { "reddit.com": px, "x.com": px, ... }   distance per site per day
 //   "hours:YYYY-MM-DD": [px x 24]                                 distance per local hour
+//   "meta:YYYY-MM-DD":  { upPx, peakPxS, binge: {site, ms, px} }  daily records
 //   "settings":         { ... }                                   user settings
 //
 // Only domain names and pixel counts are ever stored. No URLs, no page content.
@@ -17,6 +18,7 @@ export function dayKey(date = new Date()) {
 }
 
 export const hourKey = (day) => `hours:${day}`;
+export const metaKey = (day) => `meta:${day}`;
 
 export function parseDayKey(key) {
   const [y, m, d] = key.split("-").map(Number);
@@ -59,14 +61,16 @@ export async function saveSettings(patch) {
   return next;
 }
 
-/** Returns { days: {key: {domain: px}}, hours: {key: number[24]} } for the given keys. */
+/** Returns { days: {key: {domain: px}}, hours: {key: number[24]}, metas: {key: meta} } for the given keys. */
 export async function getDays(keys) {
-  const got = await chrome.storage.local.get([...keys, ...keys.map(hourKey)]);
+  const got = await chrome.storage.local.get([...keys, ...keys.map(hourKey), ...keys.map(metaKey)]);
   const days = {};
   const hours = {};
+  const metas = {};
   for (const k of keys) {
     days[k] = got[k] || {};
     hours[k] = got[hourKey(k)] || new Array(24).fill(0);
+    metas[k] = got[metaKey(k)] || null;
   }
-  return { days, hours };
+  return { days, hours, metas };
 }

@@ -43,21 +43,21 @@ export function formatBadge(meters, units = "metric") {
 
 // Sorted ascending by meters. `milestone` landmarks trigger a celebration when passed.
 export const LANDMARKS = [
-  { id: "phone", emoji: "📱", one: "phone", many: "phones", meters: 0.15, tail: "stacked end to end" },
-  { id: "paper", emoji: "📄", one: "sheet of A4 paper", many: "sheets of A4 paper", meters: 0.297, tail: "end to end" },
-  { id: "giraffe", emoji: "🦒", one: "giraffe", many: "giraffes", meters: 5.5, tail: "stacked on each other" },
-  { id: "bus", emoji: "🚌", one: "double-decker bus", many: "double-decker buses", meters: 11.2, tail: "end to end", milestone: true },
-  { id: "whale", emoji: "🐋", one: "blue whale", many: "blue whales", meters: 30, tail: "nose to tail", milestone: true },
-  { id: "pool", emoji: "🏊", one: "Olympic pool", many: "Olympic pools", meters: 50, tail: "", milestone: true },
-  { id: "pitch", emoji: "⚽", one: "football pitch", many: "football pitches", meters: 105, tail: "", milestone: true },
-  { id: "pyramid", emoji: "🔺", one: "Great Pyramid", many: "Great Pyramids", meters: 139, tail: "", milestone: true },
-  { id: "eiffel", emoji: "🗼", one: "Eiffel Tower", many: "Eiffel Towers", meters: 330, tail: "", milestone: true },
-  { id: "empire", emoji: "🏙️", one: "Empire State Building", many: "Empire State Buildings", meters: 443, tail: "", milestone: true },
-  { id: "burj", emoji: "🌆", one: "Burj Khalifa", many: "Burj Khalifas", meters: 828, tail: "", milestone: true },
-  { id: "goldengate", emoji: "🌉", one: "Golden Gate Bridge", many: "Golden Gate Bridges", meters: 2737, tail: "", milestone: true },
-  { id: "everest", emoji: "🏔️", one: "Mount Everest", many: "Mount Everests", meters: 8849, tail: "", milestone: true },
-  { id: "marathon", emoji: "🏃", one: "marathon", many: "marathons", meters: 42195, tail: "", milestone: true },
-  { id: "iss", emoji: "🛰️", one: "trip to the Space Station", many: "trips to the Space Station", meters: 408000, tail: "", milestone: true },
+  { id: "phone", one: "phone", many: "phones", meters: 0.15, tail: "stacked end to end" },
+  { id: "paper", one: "sheet of A4 paper", many: "sheets of A4 paper", meters: 0.297, tail: "end to end" },
+  { id: "giraffe", one: "giraffe", many: "giraffes", meters: 5.5, tail: "stacked on each other" },
+  { id: "bus", one: "double-decker bus", many: "double-decker buses", meters: 11.2, tail: "end to end", milestone: true },
+  { id: "whale", one: "blue whale", many: "blue whales", meters: 30, tail: "nose to tail", milestone: true },
+  { id: "pool", one: "Olympic pool", many: "Olympic pools", meters: 50, tail: "", milestone: true },
+  { id: "pitch", one: "football pitch", many: "football pitches", meters: 105, tail: "", milestone: true },
+  { id: "pyramid", one: "Great Pyramid", many: "Great Pyramids", meters: 139, tail: "", milestone: true },
+  { id: "eiffel", one: "Eiffel Tower", many: "Eiffel Towers", meters: 330, tail: "", milestone: true },
+  { id: "empire", one: "Empire State Building", many: "Empire State Buildings", meters: 443, tail: "", milestone: true },
+  { id: "burj", one: "Burj Khalifa", many: "Burj Khalifas", meters: 828, tail: "", milestone: true },
+  { id: "goldengate", one: "Golden Gate Bridge", many: "Golden Gate Bridges", meters: 2737, tail: "", milestone: true },
+  { id: "everest", one: "Mount Everest", many: "Mount Everests", meters: 8849, tail: "", milestone: true },
+  { id: "marathon", one: "marathon", many: "marathons", meters: 42195, tail: "", milestone: true },
+  { id: "iss", one: "trip to the Space Station", many: "trips to the Space Station", meters: 408000, tail: "", milestone: true },
 ];
 
 function formatCount(n) {
@@ -72,18 +72,56 @@ export function phrase(meters, landmark) {
   const tail = landmark.tail ? ` ${landmark.tail}` : "";
   if (n < 1) {
     const pct = Math.max(1, Math.round(n * 100));
-    return `${pct}% of ${/^[aeiou]/i.test(landmark.one) ? "an" : "a"} ${landmark.one}`;
+    return `${pct}% of ${article(landmark.one)} ${landmark.one}`;
   }
   const count = formatCount(n);
   return `${count} ${count === "1" ? landmark.one : landmark.many}${n >= 2 ? tail : ""}`;
 }
 
+export const article = (word) => (/^[aeiou]/i.test(word) ? "an" : "a");
+
 /** Best-fitting comparison: the biggest landmark you've covered at least once. */
 export function compare(meters) {
   const m = Math.max(0, meters || 0);
+  if (m < 0.01) return { landmark: null, text: "not even the length of a phone" };
   let pick = LANDMARKS[0];
   for (const l of LANDMARKS) if (m >= l.meters) pick = l;
-  return { landmark: pick, text: phrase(m, pick), emoji: pick.emoji };
+  return { landmark: pick, text: phrase(m, pick) };
+}
+
+// ---------- speed and time ----------
+
+const SPEEDS = [
+  { mps: 0.013, text: "a garden snail" },
+  { mps: 0.3, text: "a tortoise" },
+  { mps: 1.4, text: "a walking human" },
+  { mps: 2.7, text: "a jogger" },
+  { mps: 6, text: "a cyclist" },
+  { mps: 10.4, text: "Usain Bolt" },
+  { mps: 30, text: "a cheetah" },
+];
+
+/** "1.9 m/s" or "4.3 mph". */
+export function formatSpeed(mps, units = "metric") {
+  if (units === "imperial") return `${trim(mps * 2.23694, 1)} mph`;
+  return `${trim(mps, mps < 10 ? 1 : 0)} m/s`;
+}
+
+/** "faster than a walking human" */
+export function compareSpeed(mps) {
+  let pick = null;
+  for (const s of SPEEDS) if (mps >= s.mps) pick = s;
+  return pick ? `faster than ${pick.text}` : "slower than a snail";
+}
+
+/** "45 s", "23 min", "1 h 5 min" */
+export function formatDuration(ms) {
+  const s = Math.round(Math.max(0, ms) / 1000);
+  if (s < 60) return `${s} s`;
+  const min = Math.round(s / 60);
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  return min % 60 ? `${h} h ${min % 60} min` : `${h} h`;
 }
 
 /** Landmarks bracketing `meters` for progress: { prev, next, progress 0..1 }. */

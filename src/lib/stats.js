@@ -23,8 +23,9 @@ export const weekdayShort = (key) => weekdayName(key).slice(0, 3);
  * @param keys   day keys, oldest first
  * @param days   { key: { site: px } }
  * @param hours  { key: number[24] }
+ * @param metas  { key: { upPx, peakPxS, binge } }
  */
-export function summarize(keys, days, hours = {}) {
+export function summarize(keys, days, hours = {}, metas = {}) {
   const perDay = keys.map((key) => ({ key, px: sum(days[key]), meters: pxToMeters(sum(days[key])) }));
   const totalPx = perDay.reduce((a, d) => a + d.px, 0);
   const worstDay = perDay.reduce((w, d) => (d.px > (w?.px ?? 0) ? d : w), null);
@@ -42,6 +43,17 @@ export function summarize(keys, days, hours = {}) {
   const peakHour = byHour.some((x) => x > 0) ? byHour.indexOf(Math.max(...byHour)) : null;
   const activeDays = perDay.filter((d) => d.px > 0).length;
 
+  let upPx = 0;
+  let peakPxS = 0;
+  let binge = null;
+  for (const k of keys) {
+    const m = metas[k];
+    if (!m) continue;
+    upPx += m.upPx || 0;
+    peakPxS = Math.max(peakPxS, m.peakPxS || 0);
+    if (m.binge && (!binge || m.binge.ms > binge.ms)) binge = { ...m.binge, day: k };
+  }
+
   return {
     keys,
     perDay,
@@ -55,6 +67,9 @@ export function summarize(keys, days, hours = {}) {
     lateShare: totalPx ? latePx / totalPx : 0,
     peakHour,
     activeDays,
+    upShare: totalPx ? upPx / totalPx : 0,
+    topSpeed: pxToMeters(peakPxS), // m/s
+    binge, // { site, ms, px, day } | null
   };
 }
 

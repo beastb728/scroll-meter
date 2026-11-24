@@ -6,6 +6,8 @@ Scroll Meter measures how far you scroll. That is all it does, and everything st
 
 - **The domain name** of sites you've chosen to measure (for example `reddit.com`).
 - **How many pixels you scrolled** on each of those domains, per day and per hour of the day.
+- **Daily records**: your fastest scrolling speed, your longest continuous scroll on one site
+  (domain, duration, distance), and how much of your scrolling went back up.
 - **Your settings** (units, daily limit, display toggles).
 
 ## What it never collects
@@ -27,6 +29,7 @@ leaves it if you download or copy it and share it yourself.
 | `storage` | Save your daily totals and settings on your device |
 | `scripting` | Start measuring on the sites you pick |
 | `activeTab` | Let the popup show whether the current site is measured |
+| `alarms` | Reset the toolbar badge at midnight |
 | Optional site access | Requested one site at a time, only for sites you turn on. "Measure every website" is opt-in. |
 
 ## Your control

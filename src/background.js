@@ -1,5 +1,5 @@
-import { dayKey, hourKey, normalizeDomain, getSettings } from "./lib/store.js";
-import { pxToMeters, formatDistance, formatBadge, compare, crossed, LANDMARKS } from "./lib/units.js";
+import { dayKey, hourKey, metaKey, normalizeDomain, getSettings } from "./lib/store.js";
+import { pxToMeters, formatDistance, formatBadge, compare, crossed, article, LANDMARKS } from "./lib/units.js";
 
 const SCRIPT_ID = "scroll-meter";
 const SCRIPT_FILE = "src/content.js";
@@ -7,6 +7,10 @@ const SCRIPT_FILE = "src/content.js";
 // Largest batch a single content-script message may report. Anything bigger
 // is a bug or a hostile page, not a human thumb.
 const MAX_BATCH_PX = 200_000;
+const MAX_SPEED_PX_S = 40_000;
+// A binge ends after this long without scrolling on that site.
+const BINGE_GAP_MS = 2 * 60 * 1000;
+const FLUSH_MS = 3000;
 
 // ---------- content script registration (opt-in sites only) ----------
 
@@ -45,6 +49,7 @@ chrome.permissions.onRemoved.addListener(() => syncContentScripts());
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   await syncContentScripts();
   await refreshBadge();
+  scheduleMidnight();
   if (reason === "install") {
     chrome.tabs.create({ url: chrome.runtime.getURL("src/settings/settings.html?welcome=1") });
   }
@@ -52,6 +57,19 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 chrome.runtime.onStartup.addListener(() => {
   syncContentScripts();
   refreshBadge();
+  scheduleMidnight();
+});
+
+// Reset the badge when the day rolls over, even if nobody scrolls.
+function scheduleMidnight() {
+  const d = new Date();
+  const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 5);
+  chrome.alarms.create("midnight", { when: next.getTime() });
+}
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name !== "midnight") return;
+  refreshBadge();
+  scheduleMidnight();
 });
 
 // ---------- toolbar badge ----------
@@ -66,8 +84,8 @@ async function refreshBadge(todayM, settings) {
   settings ??= await getSettings();
   if (!settings.badge) return chrome.action.setBadgeText({ text: "" });
   todayM ??= await todayMeters();
-  await chrome.action.setBadgeBackgroundColor({ color: "#ff5a36" });
-  await chrome.action.setBadgeTextColor?.({ color: "#ffffff" });
+  await chrome.action.setBadgeBackgroundColor({ color: "#ffcb05" });
+  await chrome.action.setBadgeTextColor?.({ color: "#161513" });
   await chrome.action.setBadgeText({ text: todayM > 0 ? formatBadge(todayM, settings.units) : "" });
 }
 
@@ -79,12 +97,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 // ---------- live overlay ----------
 
-const LADDER = LANDMARKS.filter((l) => l.milestone).map((l) => ({
-  emoji: l.emoji,
-  one: l.one,
-  a: /^[aeiou]/i.test(l.one) ? "an" : "a",
-  meters: l.meters,
-}));
+const LADDER = LANDMARKS.filter((l) => l.milestone).map((l) => ({ one: l.one, a: article(l.one), meters: l.meters }));
 const overlayFor = (settings) => (settings.overlay ? { units: settings.units, ladder: LADDER } : null);
 
 // ---------- scroll accounting ----------
@@ -113,16 +126,36 @@ async function senderAllowed(sender) {
   }
 }
 
-async function addScroll(site, px) {
+/** Continuous scrolling on one site, kept in session storage so it survives worker restarts. */
+async function trackBinge(site, px, t) {
+  const { binges = {} } = await chrome.storage.session.get("binges");
+  let b = binges[site];
+  if (!b || t - b.last > BINGE_GAP_MS) b = { start: t - FLUSH_MS, last: t, px: 0 };
+  b.last = t;
+  b.px += px;
+  binges[site] = b;
+  // Forget binges that ended long ago.
+  for (const [k, v] of Object.entries(binges)) if (t - v.last > BINGE_GAP_MS) delete binges[k];
+  await chrome.storage.session.set({ binges });
+  return { site, ms: b.last - b.start, px: b.px };
+}
+
+async function addScroll(site, { px, up, peak }) {
   const now = new Date();
   const day = dayKey(now);
   const hk = hourKey(day);
-  const got = await chrome.storage.local.get([day, hk]);
+  const mk = metaKey(day);
+  const got = await chrome.storage.local.get([day, hk, mk]);
   const sites = got[day] || {};
   const hours = got[hk] || new Array(24).fill(0);
+  const meta = got[mk] || { upPx: 0, peakPxS: 0, binge: null };
   sites[site] = (sites[site] || 0) + px;
   hours[now.getHours()] += px;
-  await chrome.storage.local.set({ [day]: sites, [hk]: hours });
+  meta.upPx += up;
+  meta.peakPxS = Math.max(meta.peakPxS, peak);
+  const binge = await trackBinge(site, px, now.getTime());
+  if (!meta.binge || binge.ms > meta.binge.ms) meta.binge = binge;
+  await chrome.storage.local.set({ [day]: sites, [hk]: hours, [mk]: meta });
   return { day, todayPx: Object.values(sites).reduce((a, b) => a + b, 0) };
 }
 
@@ -144,14 +177,13 @@ async function maybeNudge(day, todayM, settings) {
       level === 1
         ? `Of today's scrolling budget, anyway. ${formatDistance(todayM, u)} of ${formatDistance(limit, u)}: that's ${c.text}.`
         : `${formatDistance(todayM, u)} today, ${Math.round(level * 100)}% of your ${formatDistance(limit, u)} limit. That's ${c.text}.`,
-    emoji: level === 1 ? "🧱" : level < 2 ? "🫠" : "🚨",
   };
 }
 
 async function handleScroll(msg, sender) {
   if (!(await senderAllowed(sender))) return { stop: true };
   const site = siteFor(msg, sender);
-  const { day, todayPx } = await addScroll(site, msg.px);
+  const { day, todayPx } = await addScroll(site, msg);
   const settings = await getSettings();
   const todayM = pxToMeters(todayPx);
   const passed = crossed(todayM - pxToMeters(msg.px), todayM).at(-1);
@@ -178,7 +210,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type !== "scroll") return false;
   const px = Math.round(Number(msg.px));
   if (!Number.isFinite(px) || px <= 0 || px > MAX_BATCH_PX) return false;
-  const job = queue.then(() => handleScroll({ ...msg, px }, sender));
+  const up = Math.min(px, Math.max(0, Math.round(Number(msg.up) || 0)));
+  const peak = Math.min(MAX_SPEED_PX_S, Math.max(0, Math.round(Number(msg.peak) || 0)));
+  const job = queue.then(() => handleScroll({ host: msg.host, px, up, peak }, sender));
   queue = job.catch(() => {});
   job.then(sendResponse, (err) => {
     console.error("Scroll Meter: failed to save", err);

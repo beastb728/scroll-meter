@@ -56,3 +56,19 @@ test("crossed lists milestones passed in one step", () => {
   assert.deepEqual(crossed(25, 55).map((l) => l.id), ["whale", "pool"]);
   assert.deepEqual(crossed(1, 5), []);
 });
+
+test("compare handles zero without inventing a phone fraction", async () => {
+  assert.equal(compare(0).text, "not even the length of a phone");
+  assert.equal(compare(0).landmark, null);
+});
+
+test("speed and duration formatting", async () => {
+  const { formatSpeed, compareSpeed, formatDuration } = await import("../src/lib/units.js");
+  assert.equal(formatSpeed(1.94), "1.9 m/s");
+  assert.equal(formatSpeed(1, "imperial"), "2.2 mph");
+  assert.equal(compareSpeed(1.5), "faster than a walking human");
+  assert.equal(compareSpeed(0.001), "slower than a snail");
+  assert.equal(formatDuration(45_000), "45 s");
+  assert.equal(formatDuration(23 * 60_000), "23 min");
+  assert.equal(formatDuration(65 * 60_000), "1 h 5 min");
+});
