@@ -1,35 +1,67 @@
-/* Scroll Meter: tape-measure identity.
-   Tape yellow + ink, hairline rules, monospace for every measurement. */
+/* Scroll Meter: a field notebook for your thumb.
+   Paper and ink, one serif for the numbers that matter, tape yellow used like a highlighter.
+   Fonts are bundled (SIL OFL), so pages never touch the network. */
+
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("fonts/InstrumentSerif-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("fonts/InstrumentSerif-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: block;
+}
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("fonts/BricolageGrotesque.ttf") format("truetype");
+  font-weight: 200 800;
+  font-stretch: 75% 100%;
+  font-display: block;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("fonts/JetBrainsMono.ttf") format("truetype");
+  font-weight: 100 800;
+  font-display: block;
+}
 
 :root {
-  --paper: #f5f2ea;
-  --surface: #fbfaf6;
-  --ink: #161513;
-  --ink-2: #4a463f;
-  --muted: #6e6a61;
-  --line: #ddd8cb;
-  --line-strong: #c4bead;
+  --paper: #f3efe4;
+  --surface: #faf8f1;
+  --ink: #1b1a17;
+  --ink-2: #48443b;
+  --muted: #7a7466;
+  --line: #dcd5c3;
+  --line-strong: #bdb49e;
   --tape: #ffcb05;
-  --on-tape: #161513;
-  --mark: #d93025;
-  --ok: #1f7a3a;
-  --radius: 6px;
-  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+  --on-tape: #1b1a17;
+  --mark: #c8321f;
+  --ok: #2c6e3f;
+  --radius: 3px;
+  --serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --sans: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.09 0 0 0 0 0.07 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #141311;
-    --surface: #1c1b18;
-    --ink: #efece4;
-    --ink-2: #c9c4b8;
-    --muted: #9c978c;
-    --line: #2e2c27;
-    --line-strong: #46423a;
-    --mark: #ff5544;
-    --ok: #5fd38a;
+    --paper: #151412;
+    --surface: #1d1c19;
+    --ink: #efe9dc;
+    --ink-2: #cbc4b4;
+    --muted: #958e7e;
+    --line: #2f2d28;
+    --line-strong: #4a463d;
+    --mark: #ff6a52;
+    --ok: #7fd197;
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 }
 
@@ -40,9 +72,10 @@
 html,
 body {
   margin: 0;
-  background: var(--paper);
+  background: var(--grain), var(--paper);
   color: var(--ink);
   font: 14px/1.45 var(--sans);
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -54,6 +87,37 @@ body {
 .num {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
+}
+
+.serif {
+  font-family: var(--serif);
+  font-weight: 400;
+}
+
+/* Small uppercase label, the voice of the instrument. */
+.kicker {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Tape yellow as a highlighter swipe, slightly uneven like a real marker. */
+.hl {
+  padding: 0 0.12em;
+  margin: 0 -0.06em;
+  background: linear-gradient(100deg, transparent 0 1%, var(--tape) 3% 96%, transparent 99%) 0 62% / 100% 58% no-repeat;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  color: inherit;
+}
+@media (prefers-color-scheme: dark) {
+  .hl {
+    color: var(--on-tape);
+    background-size: 100% 92%;
+  }
 }
 
 a {
@@ -71,32 +135,25 @@ button {
   outline-offset: 2px;
 }
 
-/* A strip of measuring tape. Ticks every 8px, majors every 40px. */
-.tape {
-  color: var(--on-tape);
-  background:
-    repeating-linear-gradient(90deg, var(--on-tape) 0 1.5px, transparent 1.5px 40px) 0 0 / 100% 10px no-repeat,
-    repeating-linear-gradient(90deg, var(--on-tape) 0 1px, transparent 1px 8px) 0 0 / 100% 5px no-repeat,
-    var(--tape);
-}
-
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 9px 14px;
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--ink);
   border-radius: var(--radius);
   background: transparent;
-  font-weight: 650;
+  font-weight: 600;
   text-decoration: none;
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.12s, color 0.12s, transform 0.12s;
 }
 .btn:hover {
-  background: var(--tape);
-  border-color: var(--on-tape);
-  color: var(--on-tape);
+  background: var(--ink);
+  color: var(--paper);
+}
+.btn:active {
+  transform: translateY(1px);
 }
 .btn.solid {
   background: var(--ink);
@@ -104,18 +161,74 @@ button {
 }
 .btn.solid:hover {
   background: var(--tape);
+  border-color: var(--on-tape);
   color: var(--on-tape);
 }
 .btn.quiet {
   border-color: var(--line-strong);
 }
+.btn.quiet:hover {
+  border-color: var(--ink);
+}
 
+/* Section heading: serif italic with a hairline running to the edge. */
 .section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
   margin: 0;
-  font-size: 13px;
-  font-weight: 700;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.1;
+  letter-spacing: -0.005em;
+}
+.section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line-strong);
+  transform: translateY(-5px);
+}
+.section-title .kicker {
+  font-style: normal;
+  order: 2;
 }
 
 .muted {
   color: var(--muted);
+}
+
+/* Shared page masthead for settings and the card page. */
+.masthead {
+  border-bottom: 1px solid var(--ink);
+}
+.masthead-inner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 auto;
+  padding: 16px 32px 12px;
+}
+.wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.wordmark::before {
+  content: "";
+  width: 20px;
+  height: 9px;
+  align-self: center;
+  background:
+    repeating-linear-gradient(90deg, var(--on-tape) 0 1px, transparent 1px 4px) 2px 0 / 100% 3px no-repeat,
+    var(--tape);
+  box-shadow: inset 0 0 0 1px var(--on-tape);
 }

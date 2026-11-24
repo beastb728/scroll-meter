@@ -1,4 +1,4 @@
-// Minimal canvas bar chart for the 7-day view, in the tape-measure style.
+// Minimal canvas bar chart for the 7-day view: hatched past days, today in tape yellow.
 
 /**
  * @param canvas  <canvas> element (CSS-sized; we scale for devicePixelRatio)
@@ -39,16 +39,30 @@ export function drawBars(canvas, bars) {
         ctx.lineWidth = 1.5;
         ctx.strokeRect(left + 0.75, y + 0.75, barW - 1.5, bh - 0.75);
       } else {
-        ctx.fillStyle = color("--line-strong");
-        ctx.fillRect(left, y, barW, bh);
+        // Past days: pencil hatching inside a hairline box.
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(left, y, barW, bh);
+        ctx.clip();
+        ctx.strokeStyle = color("--ink-2");
+        ctx.lineWidth = 1;
+        for (let d = -bh; d < barW; d += 4) {
+          ctx.moveTo(left + d, y + bh);
+          ctx.lineTo(left + d + bh, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+        ctx.strokeStyle = color("--ink");
+        ctx.lineWidth = 1;
+        ctx.strokeRect(left + 0.5, y + 0.5, barW - 1, bh);
       }
     }
 
-    ctx.font = `${b.highlight ? 700 : 500} 10.5px ${mono}`;
+    ctx.font = `${b.highlight ? 700 : 500} 9.5px ${mono}`;
     ctx.fillStyle = b.highlight ? color("--ink") : color("--muted");
     ctx.fillText(b.label, x, h - 3);
     if (b.display && (b.highlight || b.value === max)) {
-      ctx.font = `700 10.5px ${mono}`;
+      ctx.font = `600 10px ${mono}`;
       ctx.fillStyle = color("--ink");
       ctx.fillText(b.display, x, Math.max(10, y - 5));
     }
@@ -56,6 +70,6 @@ export function drawBars(canvas, bars) {
 
   // Baseline with ticks under each day, like a ruler.
   ctx.fillStyle = color("--ink");
-  ctx.fillRect(0, baseY, w, 1.5);
+  ctx.fillRect(0, baseY, w, 1);
   bars.forEach((_, i) => ctx.fillRect(Math.round(slot * i + slot / 2), baseY, 1.5, 4));
 }

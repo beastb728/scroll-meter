@@ -1,7 +1,7 @@
 import { lastNDays, getDays, getSettings, parseDayKey } from "../lib/store.js";
 import { formatDistance, formatSpeed, formatDuration, compare } from "../lib/units.js";
 import { summarize, roastTitle, weekdayName, weekdayShort } from "../lib/stats.js";
-import { drawCard } from "./card.js";
+import { drawCard, CARD_FONTS } from "./card.js";
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -80,7 +80,7 @@ async function render() {
   const { units } = await getSettings();
   const keys = weekKeys(state.week);
   const data = await cardData(keys, units);
-  await document.fonts?.ready;
+  await Promise.all(CARD_FONTS.map((f) => document.fonts.load(f))).catch(() => {});
   drawCard($("card"), data, state);
   $("range").textContent = state.week === 0 ? "This week" : data.range;
   $("range").title = data.range;

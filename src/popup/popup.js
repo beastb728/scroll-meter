@@ -17,35 +17,43 @@ async function render() {
   $("date").textContent = new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
   const todayM = pxToMeters(sum(days[today]));
   setMeasure($("today"), formatDistance(todayM, units));
-  $("compare").textContent = todayM > 0 ? `That's ${compare(todayM).text}.` : "Clean slate. Your thumb is rested.";
-
-  // Ruler to the next landmark
-  const c = climb(todayM);
-  $("climb").hidden = !c.next;
-  if (c.next) {
-    $("climb-fill").style.width = `${Math.max(0.5, c.progress * 100)}%`;
-    $("climb-from").textContent = c.prev ? `${c.prev.one} · ${formatDistance(c.prev.meters, units)}` : "Start";
-    $("climb-to").textContent = `${c.next.one} · ${formatDistance(c.next.meters, units)}`;
-    $("climb-left").textContent = `${formatDistance(c.next.meters - todayM, units)} to go until ${c.next.one}.`;
+  const cmp = $("compare");
+  if (todayM > 0) {
+    const mark = Object.assign(document.createElement("span"), { className: "hl", textContent: compare(todayM).text });
+    cmp.replaceChildren("That's ", mark, ".");
+  } else {
+    cmp.textContent = "Clean slate. Your thumb is rested.";
   }
 
-  // Top sites
+  // Vertical tape: from the last landmark (bottom) to the next one (top).
+  const c = climb(todayM);
+  $("gauge").classList.toggle("empty", !c.next);
+  $("climb-left").hidden = !c.next || todayM <= 0;
+  if (c.next) {
+    const pct = `${Math.min(100, Math.max(1, c.progress * 100))}%`;
+    $("gauge-fill").style.height = pct;
+    $("gauge-mark").style.bottom = pct;
+    gaugeLabel($("gauge-to"), c.next.one, formatDistance(c.next.meters, units));
+    gaugeLabel($("gauge-from"), c.prev ? c.prev.one : "Start", c.prev ? formatDistance(c.prev.meters, units) : formatDistance(0, units));
+    $("climb-left").textContent = `↑ ${formatDistance(c.next.meters - todayM, units)} to go until ${c.next.one}`;
+  }
+
+  // Top sites, as an index with leader dots.
   const sites = topSites([days[today]], 5);
   const list = $("sites");
   list.replaceChildren();
-  const maxPx = sites[0]?.px || 1;
+  const totalPx = sum(days[today]) || 1;
   for (const s of sites) {
     const li = document.createElement("li");
     const name = Object.assign(document.createElement("span"), { className: "name", textContent: s.site });
-    const dist = Object.assign(document.createElement("span"), {
-      className: "dist num",
-      textContent: formatDistance(s.meters, units),
+    const lead = Object.assign(document.createElement("span"), { className: "lead" });
+    const dist = Object.assign(document.createElement("span"), { className: "dist", textContent: formatDistance(s.meters, units) });
+    const share = Object.assign(document.createElement("span"), {
+      className: "share",
+      textContent: `${Math.max(1, Math.round((s.px / totalPx) * 100))}%`,
     });
-    const bar = Object.assign(document.createElement("div"), { className: "bar-track" });
-    const fill = document.createElement("span");
-    fill.style.width = `${Math.max(2, (s.px / maxPx) * 100)}%`;
-    bar.append(fill);
-    li.append(name, dist, bar);
+    if (s === sites[0]) name.classList.add("hl");
+    li.append(name, lead, dist, share);
     list.append(li);
   }
   $("sites-empty").hidden = sites.length > 0;
@@ -55,11 +63,11 @@ async function render() {
   $("records-block").hidden = !meta || todayM < 1;
   if (meta && todayM >= 1) {
     const mps = pxToMeters(meta.peakPxS || 0);
-    $("rec-speed").textContent = formatSpeed(mps, units);
+    setRecord($("rec-speed"), formatSpeed(mps, units));
     $("rec-speed-sub").textContent = compareSpeed(mps);
-    $("rec-binge").textContent = meta.binge ? formatDuration(meta.binge.ms) : "–";
+    setRecord($("rec-binge"), meta.binge ? formatDuration(meta.binge.ms) : "–");
     $("rec-binge-sub").textContent = meta.binge?.site || "";
-    $("rec-up").textContent = `${Math.round(((meta.upPx || 0) / sum(days[today])) * 100)}%`;
+    setRecord($("rec-up"), `${Math.round(((meta.upPx || 0) / sum(days[today])) * 100)} %`);
   }
 
   // 7-day chart
@@ -75,6 +83,22 @@ async function render() {
   drawBars($("chart"), bars);
   const weekM = bars.reduce((a, b) => a + b.value, 0);
   $("week-total").textContent = weekM > 0 ? `${formatDistance(weekM, units)} total` : "";
+}
+
+function gaugeLabel(el, name, dist) {
+  el.replaceChildren(name, Object.assign(document.createElement("b"), { textContent: dist }));
+}
+
+/** "1.4 m/s" → number in serif with a small italic unit. "–" stays as is. */
+function setRecord(el, text) {
+  const i = text.indexOf(" ");
+  if (i < 0) return (el.textContent = text);
+  const parts = text.split(" ");
+  el.replaceChildren();
+  for (let j = 0; j < parts.length; j += 2) {
+    el.append(parts[j]);
+    if (parts[j + 1]) el.append(Object.assign(document.createElement("small"), { textContent: parts[j + 1] }), j + 2 < parts.length ? " " : "");
+  }
 }
 
 /** Renders "147 m" as a big number with a smaller unit. */

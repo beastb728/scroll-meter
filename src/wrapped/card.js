@@ -7,12 +7,36 @@ export const FORMATS = {
   square: { w: 1080, h: 1080 },
 };
 
-const SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif';
-const MONO = 'ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace';
+// Bundled fonts (see src/ui/base.css). wrapped.js waits for them before drawing.
+const SANS = '"Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif';
+const SERIF = '"Instrument Serif", Georgia, serif';
+const MONO = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 const TAPE = "#ffcb05";
-const INK = "#161513";
-const RED = "#d93025";
+const INK = "#1b1a17";
+const RED = "#c8321f";
 const PAPER = "#f5f2ea";
+
+export const CARD_FONTS = [
+  `400 100px ${SERIF}`,
+  `italic 400 100px ${SERIF}`,
+  `500 100px ${SANS}`,
+  `700 100px ${SANS}`,
+  `500 100px ${MONO}`,
+  `800 100px ${MONO}`,
+];
+
+/** Fine grain so flat colour reads as printed paper. Deterministic, so re-renders don't shimmer. */
+function grain(ctx, w, h, alpha = 0.06) {
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  ctx.save();
+  ctx.fillStyle = INK;
+  for (let i = 0; i < (w * h) / 22; i++) {
+    ctx.globalAlpha = rnd() * alpha;
+    ctx.fillRect(rnd() * w, rnd() * h, 1.6, 1.6);
+  }
+  ctx.restore();
+}
 
 /**
  * @param data {
@@ -90,6 +114,7 @@ function drawTape(ctx, w, h, d, format) {
 
   ctx.fillStyle = TAPE;
   ctx.fillRect(0, 0, w, h);
+  grain(ctx, w, h);
 
   // Ruler down the left edge, scaled so the whole card is your week.
   const footerH = story ? 150 : 110;
@@ -110,7 +135,7 @@ function drawTape(ctx, w, h, d, format) {
     if (major && i > 0) {
       const n = i / 10;
       ctx.fillStyle = n % 5 === 0 ? RED : INK;
-      font(ctx, 800, 30 * k, MONO);
+      font(ctx, 700, 28 * k, MONO);
       ctx.fillText(trimNum(v), 76, y + 11);
       ctx.fillStyle = INK;
     }
@@ -131,28 +156,31 @@ function drawTape(ctx, w, h, d, format) {
   ctx.fillText(d.range, x, y);
 
   y += story ? 170 : 104;
-  font(ctx, 650, 50 * k);
+  font(ctx, "italic 400", 64 * k, SERIF);
   ctx.fillText("This week I scrolled", x, y);
 
-  // Big number with a smaller unit.
+  // Big number in the serif, unit in italic.
   const [num, unit] = splitUnit(d.total);
-  y += story ? 236 : 182;
-  const numSize = fitText(ctx, num, 900, story ? 250 : 200, inner - 150);
-  ctx.fillText(num, x - 8, y);
+  y += story ? 290 : 220;
+  const numSize = fitText(ctx, num, 400, story ? 360 : 280, inner - 170, SERIF);
+  ctx.save();
+  ctx.letterSpacing = `${-numSize * 0.03}px`;
+  ctx.fillText(num, x - 10, y);
   const numW = ctx.measureText(num).width;
-  font(ctx, 800, numSize * 0.38);
-  ctx.fillText(unit, x + numW + 14, y);
+  ctx.restore();
+  font(ctx, "italic 400", numSize * 0.4, SERIF);
+  ctx.fillText(unit, x + numW + numSize * 0.06, y);
 
-  y += story ? 84 : 66;
-  font(ctx, 700, 46 * k);
+  y += story ? 92 : 72;
+  font(ctx, 400, 60 * k, SERIF);
   for (const line of wrap(ctx, `That's ${d.compare}.`, inner).slice(0, 2)) {
     ctx.fillText(line, x, y);
-    y += 58 * k;
+    y += 64 * k;
   }
 
   // Title on a label-maker strip.
   y += story ? 60 : 22;
-  font(ctx, 700, 24 * k, MONO);
+  font(ctx, 600, 22 * k, MONO);
   spaced(ctx, "OFFICIAL TITLE", x, y, 4);
   y += 22;
   const titleSize = fitText(ctx, d.title.toUpperCase(), 800, 60 * k, inner - 56, MONO, 30);
@@ -170,10 +198,10 @@ function drawTape(ctx, w, h, d, format) {
 
   if (story) {
     ctx.fillStyle = INK;
-    font(ctx, 500, 34);
+    font(ctx, "italic 400", 40, SERIF);
     for (const line of wrap(ctx, d.line, inner).slice(0, 2)) {
       ctx.fillText(line, x, y);
-      y += 44;
+      y += 46;
     }
     y += 26;
   }
@@ -185,24 +213,24 @@ function drawTape(ctx, w, h, d, format) {
   const rowH = rows.length ? Math.max(story ? 84 : 64, Math.min(story ? 112 : 76, free / rows.length)) : 0;
   ctx.fillStyle = INK;
   for (const r of rows) {
-    ctx.fillRect(x, y, inner, 3);
-    font(ctx, 700, 22 * k, MONO);
+    ctx.fillRect(x, y, inner, 2);
+    font(ctx, 600, 21 * k, MONO);
     spaced(ctx, r.label.toUpperCase(), x, y + rowH * 0.6, 3);
     ctx.textAlign = "right";
-    fitText(ctx, r.value, 750, 38 * k, inner * 0.6);
+    fitText(ctx, r.value, 600, 40 * k, inner * 0.6);
     ctx.fillText(r.value, right, y + rowH * 0.64);
     ctx.textAlign = "left";
     y += rowH;
   }
-  if (rows.length) ctx.fillRect(x, y, inner, 3);
+  if (rows.length) ctx.fillRect(x, y, inner, 2);
 
   // Footer band.
   ctx.fillStyle = INK;
   ctx.fillRect(0, h - footerH, w, footerH);
   ctx.fillStyle = TAPE;
-  font(ctx, 800, 34 * k, MONO);
-  spaced(ctx, "SCROLL METER", x, h - footerH / 2 + 12, 6);
-  font(ctx, 500, 30 * k);
+  font(ctx, 700, 30 * k, MONO);
+  spaced(ctx, "SCROLL METER", x, h - footerH / 2 + 11, 6);
+  font(ctx, "italic 400", 40 * k, SERIF);
   ctx.textAlign = "right";
   ctx.fillText("How far do you scroll?", right, h - footerH / 2 + 11);
   ctx.textAlign = "left";

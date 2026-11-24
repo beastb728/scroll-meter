@@ -126,7 +126,8 @@
   const CSS = `
     :host { all: initial; }
     * { box-sizing: border-box; margin: 0; }
-    .ui { font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #161513; }
+    .ui { font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1b1a17; }
+    .serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-weight: 400; }
     .mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; }
 
     /* Tape: yellow strip with tick marks along the top edge. */
@@ -140,7 +141,7 @@
 
     .pill {
       position: fixed; right: 16px; bottom: 16px; width: 272px; padding: 14px 12px 10px;
-      border-radius: 4px; box-shadow: 3px 3px 0 #161513, 0 8px 24px rgba(0,0,0,.18);
+      border-radius: 3px; box-shadow: 0 1px 0 rgba(0,0,0,.25), 0 14px 32px -10px rgba(0,0,0,.35);
       opacity: 0; transform: translateY(10px); transition: opacity .2s, transform .2s;
     }
     .pill.show { opacity: 1; transform: none; }
@@ -153,14 +154,14 @@
       background-image:
         repeating-linear-gradient(90deg, var(--tick) 0 1.5px, transparent 1.5px 40px),
         repeating-linear-gradient(90deg, var(--tick) 0 1px, transparent 1px 8px);
-      background-size: 100% 9px, 100% 5px; background-repeat: no-repeat; box-shadow: 3px 3px 0 #ffcb05, 0 8px 24px rgba(0,0,0,.25); }
+      background-size: 100% 9px, 100% 5px; background-repeat: no-repeat; box-shadow: 0 1px 0 rgba(0,0,0,.4), 0 14px 32px -10px rgba(0,0,0,.45); }
     .pill.party .p-track { background: rgba(255,203,5,.25); }
     .pill.party .p-track i { background: #ffcb05; }
 
     .nudge {
       pointer-events: auto; position: fixed; left: 50%; bottom: 20px; width: min(430px, calc(100vw - 32px));
       display: grid; grid-template-columns: 16px 1fr; overflow: hidden;
-      background: #f5f2ea; border: 2px solid #161513; border-radius: 6px; box-shadow: 5px 5px 0 #161513;
+      background: #f3efe4; border: 1px solid #1b1a17; border-radius: 3px; box-shadow: 0 24px 48px -16px rgba(0,0,0,.4);
       transform: translate(-50%, calc(100% + 40px)); transition: transform .4s cubic-bezier(.2,.9,.3,1.15);
     }
     .nudge.show { transform: translate(-50%, 0); }
@@ -168,16 +169,16 @@
       background:
         repeating-linear-gradient(180deg, var(--tick) 0 1.5px, transparent 1.5px 40px) 0 0 / 9px 100% no-repeat,
         repeating-linear-gradient(180deg, var(--tick) 0 1px, transparent 1px 8px) 0 0 / 5px 100% no-repeat,
-        #ffcb05; border-right: 2px solid #161513; }
+        #ffcb05; border-right: 1px solid #1b1a17; }
     .n-body { padding: 16px 18px 14px; }
-    .n-title { font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
-    .n-text { margin-top: 4px; font-size: 14px; color: #4a463f; }
+    .n-title { font-size: 24px; line-height: 1.1; font-style: italic; letter-spacing: -.01em; }
+    .n-text { margin-top: 6px; font-size: 14px; color: #48443b; }
     .n-row { display: flex; gap: 8px; margin-top: 12px; }
-    button { font: inherit; font-size: 13px; font-weight: 700; border-radius: 4px; padding: 7px 12px; cursor: pointer; }
-    .ok { color: #f5f2ea; background: #161513; border: 2px solid #161513; }
-    .ok:hover { color: #161513; background: #ffcb05; }
-    .later { color: #4a463f; background: transparent; border: 2px solid transparent; }
-    .later:hover { border-color: #161513; color: #161513; }
+    button { font: inherit; font-size: 13px; font-weight: 600; border-radius: 3px; padding: 8px 13px; cursor: pointer; }
+    .ok { color: #f3efe4; background: #1b1a17; border: 1px solid #1b1a17; }
+    .ok:hover { color: #1b1a17; background: #ffcb05; }
+    .later { color: #48443b; background: transparent; border: 1px solid transparent; text-decoration: underline; text-underline-offset: 3px; }
+    .later:hover { color: #1b1a17; }
   `;
 
   let ui = null;
@@ -210,7 +211,7 @@
     ok.onclick = close;
     later.onclick = close;
     row.append(ok, later);
-    content.append(el("div", "n-title", title), el("div", "n-text", body), row);
+    content.append(el("div", "n-title serif", title), el("div", "n-text", body), row);
     card.append(el("div", "n-tape"), content);
     root.querySelector(".ui").append(card);
     requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add("show")));

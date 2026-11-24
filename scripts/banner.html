@@ -1,17 +1,22 @@
 <!doctype html>
-<!-- Source for docs/banner.png (2560x840). Open in Chrome, then right-click the canvas and
-     "Save image as". Drawn on canvas so it matches the extension's card style. -->
+<!-- Source for docs/banner.png (2560x840). Open in Chrome (launched with --allow-file-access-from-files
+     so the bundled fonts load), then right-click the canvas and "Save image as". -->
 <html>
+  <head>
+    <link rel="stylesheet" href="../src/ui/base.css" />
+  </head>
   <body style="margin: 0; background: #161513">
     <canvas id="c" width="2560" height="840" style="width: 1280px; height: 420px; display: block"></canvas>
-    <script>
+    <script type="module">
+      await Promise.all(['400 100px "Instrument Serif"', 'italic 400 100px "Instrument Serif"', '700 10px "JetBrains Mono"', '500 10px "Bricolage Grotesque"'].map((f) => document.fonts.load(f)));
       const c = document.getElementById("c");
       const ctx = c.getContext("2d");
       ctx.scale(2, 2);
       const W = 1280, H = 420;
-      const TAPE = "#ffcb05", INK = "#161513", RED = "#d93025";
-      const SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif';
-      const MONO = 'ui-monospace, "SF Mono", "JetBrains Mono", "DejaVu Sans Mono", Menlo, monospace';
+      const TAPE = "#ffcb05", INK = "#1b1a17", RED = "#c8321f";
+      const SANS = '"Bricolage Grotesque", system-ui, sans-serif';
+      const SERIF = '"Instrument Serif", Georgia, serif';
+      const MONO = '"JetBrains Mono", ui-monospace, monospace';
 
       ctx.fillStyle = TAPE;
       ctx.fillRect(0, 0, W, H);
@@ -24,7 +29,7 @@
         if (major && i) {
           const n = i / 10;
           ctx.fillStyle = n % 5 === 0 ? RED : INK;
-          ctx.font = `800 13px ${MONO}`;
+          ctx.font = `700 12px ${MONO}`;
           ctx.fillText(String(n), x + 5, 44);
           ctx.fillStyle = INK;
         }
@@ -33,13 +38,13 @@
       // Wordmark + tagline
       const x = 72;
       ctx.fillStyle = INK;
-      ctx.font = `900 104px ${SANS}`;
+      ctx.font = `400 136px ${SERIF}`;
       ctx.letterSpacing = "-3px";
-      ctx.fillText("Scroll Meter", x - 4, 218);
+      ctx.fillText("Scroll Meter", x - 6, 222);
       ctx.letterSpacing = "0px";
-      ctx.font = `600 28px ${SANS}`;
-      ctx.fillText("How far did your thumb travel today?", x, 270);
-      ctx.font = `500 18px ${MONO}`;
+      ctx.font = `italic 400 38px ${SERIF}`;
+      ctx.fillText("How far did your thumb travel today?", x, 272);
+      ctx.font = `500 16px ${MONO}`;
       ctx.fillText("A Chrome extension that measures every pixel you scroll.", x, 312);
 
       // Label-maker strips on the right
@@ -47,7 +52,7 @@
         ctx.save();
         ctx.translate(sx, sy);
         ctx.rotate(rot);
-        ctx.font = `800 ${size}px ${MONO}`;
+        ctx.font = `700 ${size}px ${MONO}`;
         const w = ctx.measureText(text).width + size * 1.2;
         const h = size * 1.9;
         ctx.fillStyle = INK;
@@ -64,7 +69,7 @@
       ctx.fillStyle = INK;
       ctx.fillRect(0, H - 54, W, 54);
       ctx.fillStyle = TAPE;
-      ctx.font = `700 15px ${MONO}`;
+      ctx.font = `600 14px ${MONO}`;
       ctx.letterSpacing = "3px";
       ctx.fillText("PRIVATE BY DESIGN  ·  OPT-IN PER SITE  ·  NOTHING LEAVES YOUR BROWSER", x, H - 21);
     </script>

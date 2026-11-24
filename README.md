@@ -175,7 +175,7 @@ src/
   settings/          site picker, daily limit, units, export and delete
   wrapped/           weekly card page and canvas renderer
   lib/               storage, units and comparisons, stats, site permissions
-  ui/                design tokens and the 7-day chart
+  ui/                design tokens, bundled fonts, the 7-day chart
 tests/               unit tests for the pure modules in src/lib
 scripts/             icon generator, banner source, packaging
 ```
@@ -227,3 +227,8 @@ anything visual.
 ## License
 
 [MIT](LICENSE) © beastb728
+
+Bundled typefaces, all under the [SIL Open Font License](src/ui/fonts/):
+[Instrument Serif](https://github.com/Instrument/instrument-serif),
+[Bricolage Grotesque](https://github.com/ateliertriay/bricolage) and
+[JetBrains Mono](https://github.com/JetBrains/JetBrainsMono).

@@ -7,27 +7,25 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header class="bar tape">
-      <span class="wordmark">SCROLL METER</span>
+    <header class="top">
+      <span class="wordmark">Scroll Meter</span>
+      <span id="date" class="kicker"></span>
       <button id="settings" class="link">Settings</button>
     </header>
 
     <main>
       <section class="hero">
-        <div class="hero-top">
-          <span class="label">Today</span>
-          <span id="date" class="label num"></span>
+        <div id="gauge" class="gauge" aria-hidden="true">
+          <span id="gauge-to" class="g-label g-to"></span>
+          <div class="g-scale"><i id="gauge-fill"></i><b id="gauge-mark"></b></div>
+          <span id="gauge-from" class="g-label g-from"></span>
         </div>
-        <div id="today" class="big num">0 m</div>
-        <p id="compare" class="compare"></p>
 
-        <div id="climb" class="climb" hidden>
-          <div class="ruler"><i id="climb-fill"></i></div>
-          <div class="climb-labels">
-            <span id="climb-from"></span>
-            <span id="climb-to"></span>
-          </div>
-          <p id="climb-left" class="climb-left"></p>
+        <div class="reading">
+          <p class="lede">Today your thumb travelled</p>
+          <div id="today" class="big">0 m</div>
+          <p id="compare" class="compare"></p>
+          <p id="climb-left" class="note" hidden></p>
         </div>
       </section>
 
@@ -43,34 +41,34 @@
         <h2 class="section-title">Today's records</h2>
         <dl class="records">
           <div>
-            <dt>Top speed</dt>
-            <dd id="rec-speed" class="num"></dd>
+            <dt class="kicker">Top speed</dt>
+            <dd id="rec-speed" class="rec"></dd>
             <dd id="rec-speed-sub" class="sub"></dd>
           </div>
           <div>
-            <dt>Longest binge</dt>
-            <dd id="rec-binge" class="num"></dd>
+            <dt class="kicker">Binge</dt>
+            <dd id="rec-binge" class="rec"></dd>
             <dd id="rec-binge-sub" class="sub"></dd>
           </div>
           <div>
-            <dt>Scrolled back up</dt>
-            <dd id="rec-up" class="num"></dd>
+            <dt class="kicker">Back up</dt>
+            <dd id="rec-up" class="rec"></dd>
             <dd class="sub">second thoughts</dd>
           </div>
         </dl>
       </section>
 
       <section class="block">
-        <div class="block-head">
-          <h2 class="section-title">Last 7 days</h2>
-          <span id="week-total" class="num muted"></span>
-        </div>
+        <h2 class="section-title">Last 7 days <span id="week-total" class="kicker"></span></h2>
         <canvas id="chart" aria-label="Distance scrolled per day, last 7 days"></canvas>
       </section>
 
-      <button id="wrapped" class="btn solid wide">Make this week's card</button>
+      <button id="wrapped" class="cta">
+        <span>Make this week's card</span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </button>
 
-      <footer class="privacy">Stored on this device only. Nothing is uploaded.</footer>
+      <footer class="privacy kicker">Kept on this device · nothing uploaded</footer>
     </main>
 
     <script type="module" src="popup.js"></script>

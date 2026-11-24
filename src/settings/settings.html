@@ -9,91 +9,105 @@
     <link rel="stylesheet" href="settings.css" />
   </head>
   <body>
-    <header class="masthead tape">
+    <header class="masthead">
       <div class="masthead-inner">
-        <span class="wordmark">SCROLL METER</span>
-        <span class="masthead-sub">Settings</span>
+        <span class="wordmark">Scroll Meter</span>
+        <span class="kicker">Settings</span>
       </div>
     </header>
-    <main class="wrap">
-      <section id="welcome" class="welcome" hidden>
-        <h1>First, pick what to measure.</h1>
-        <p>
-          Scroll Meter only runs on sites you switch on below. Chrome will ask you to confirm each one. On those sites it
-          reads how far you scroll and nothing else: no page content, no URLs.
-        </p>
-      </section>
 
-      <section class="panel">
-        <h2 class="section-title">Sites to measure</h2>
-        <p class="sub">Click to switch a site on or off.</p>
-        <div id="presets" class="presets"></div>
-
-        <form id="add-form" class="add">
-          <input id="add-input" type="text" placeholder="Add another site, e.g. medium.com" autocomplete="off" spellcheck="false" />
-          <button class="btn" type="submit">Add</button>
-        </form>
-        <p id="add-error" class="error" hidden></p>
-        <ul id="custom" class="custom"></ul>
-
-        <label class="switch-row all">
-          <span>
-            <strong>Measure every website</strong>
-            <span class="sub">
-              Chrome will warn that this can "read and change all your data on all websites". Scroll Meter still only
-              reads scroll positions and the site's domain name.
-            </span>
-          </span>
-          <input id="all-sites" type="checkbox" role="switch" />
-        </label>
-      </section>
-
-      <section class="panel">
-        <h2 class="section-title">Daily limit</h2>
-        <label class="field">
-          <span>Give me a gentle nudge after</span>
-          <select id="limit"></select>
-        </label>
-        <p class="sub">The nudge slides up once when you hit the limit, then again every extra 50%. It never blocks anything.</p>
-      </section>
-
-      <section class="panel">
-        <h2 class="section-title">Display</h2>
-        <label class="field">
-          <span>Units</span>
-          <select id="units">
-            <option value="metric">Metric (m, km)</option>
-            <option value="imperial">Imperial (ft, mi)</option>
-          </select>
-        </label>
-        <label class="switch-row field">
-          <span>
-            Live climb while scrolling
-            <span class="sub">A strip of tape in the corner shows how far it is to the next landmark, and marks it when you pass one.</span>
-          </span>
-          <input id="overlay" type="checkbox" role="switch" />
-        </label>
-        <label class="switch-row field">
-          <span>
-            Today's distance on the toolbar icon
-          </span>
-          <input id="badge" type="checkbox" role="switch" />
-        </label>
-      </section>
-
-      <section class="panel">
-        <h2 class="section-title">Your data</h2>
-        <p class="sub">
-          Stored only on this device: distance per site per day, hourly totals, and daily records (top speed, longest
-          binge, how much you scrolled back up). No URLs, no page content, nothing sent anywhere.
-        </p>
-        <div class="buttons">
-          <button id="export" class="btn quiet">Export as JSON</button>
-          <button id="wipe" class="btn quiet danger">Delete scroll history</button>
+    <div class="page">
+      <aside class="intro">
+        <div id="welcome" hidden>
+          <p class="kicker">Welcome</p>
+          <h1>First, pick what <em>to measure.</em></h1>
+          <p class="intro-text">
+            Scroll Meter only runs on sites you switch on. Chrome asks you to confirm each one. On those sites it reads
+            how far you scroll and nothing else: no page content, no URLs.
+          </p>
         </div>
-        <p id="data-status" class="status" role="status"></p>
-      </section>
-    </main>
+        <div class="not-welcome">
+          <h1>Settings, <em>measured out.</em></h1>
+          <p class="intro-text">Everything here is stored on this device. Changes save as you make them.</p>
+        </div>
+        <nav class="toc">
+          <a href="#sites"><span>01</span> Sites to measure</a>
+          <a href="#limit-sec"><span>02</span> Daily limit</a>
+          <a href="#display"><span>03</span> Display</a>
+          <a href="#data"><span>04</span> Your data</a>
+        </nav>
+      </aside>
+
+      <main class="panels">
+        <section id="sites" class="panel">
+          <h2 class="section-title">Sites to measure <span class="kicker">01</span></h2>
+          <p class="sub">Click a site to switch it on or off.</p>
+          <div id="presets" class="presets"></div>
+
+          <form id="add-form" class="add">
+            <input id="add-input" type="text" placeholder="Add another site, e.g. medium.com" autocomplete="off" spellcheck="false" />
+            <button class="btn" type="submit">Add site</button>
+          </form>
+          <p id="add-error" class="error" hidden></p>
+          <ul id="custom" class="custom"></ul>
+
+          <label class="switch-row all">
+            <span>
+              <strong>Measure every website</strong>
+              <span class="sub">
+                Chrome will warn that this can "read and change all your data on all websites". Scroll Meter still only
+                reads scroll positions and the site's domain name.
+              </span>
+            </span>
+            <input id="all-sites" type="checkbox" role="switch" />
+          </label>
+        </section>
+
+        <section id="limit-sec" class="panel">
+          <h2 class="section-title">Daily limit <span class="kicker">02</span></h2>
+          <label class="field">
+            <span>Give me a gentle nudge after</span>
+            <select id="limit"></select>
+          </label>
+          <p class="sub">The nudge slides up once when you hit the limit, then again every extra 50%. It never blocks anything.</p>
+        </section>
+
+        <section id="display" class="panel">
+          <h2 class="section-title">Display <span class="kicker">03</span></h2>
+          <label class="field">
+            <span>Units</span>
+            <select id="units">
+              <option value="metric">Metric (m, km)</option>
+              <option value="imperial">Imperial (ft, mi)</option>
+            </select>
+          </label>
+          <label class="switch-row field">
+            <span>
+              Live climb while scrolling
+              <span class="sub">A small strip in the corner shows how far it is to the next landmark, and marks it when you pass one.</span>
+            </span>
+            <input id="overlay" type="checkbox" role="switch" />
+          </label>
+          <label class="switch-row field">
+            <span>Today's distance on the toolbar icon</span>
+            <input id="badge" type="checkbox" role="switch" />
+          </label>
+        </section>
+
+        <section id="data" class="panel">
+          <h2 class="section-title">Your data <span class="kicker">04</span></h2>
+          <p class="sub">
+            Stored only on this device: distance per site per day, hourly totals, and daily records (top speed, longest
+            binge, how much you scrolled back up). No URLs, no page content, nothing sent anywhere.
+          </p>
+          <div class="buttons">
+            <button id="export" class="btn quiet">Export as JSON</button>
+            <button id="wipe" class="btn quiet danger">Delete scroll history</button>
+          </div>
+          <p id="data-status" class="status" role="status"></p>
+        </section>
+      </main>
+    </div>
     <script type="module" src="settings.js"></script>
   </body>
 </html>
