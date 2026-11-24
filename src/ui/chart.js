@@ -1,4 +1,4 @@
-// Minimal canvas bar chart for the 7-day view.
+// Minimal canvas bar chart for the 7-day view, in the tape-measure style.
 
 /**
  * @param canvas  <canvas> element (CSS-sized; we scale for devicePixelRatio)
@@ -7,6 +7,7 @@
 export function drawBars(canvas, bars) {
   const css = getComputedStyle(document.documentElement);
   const color = (v) => css.getPropertyValue(v).trim();
+  const mono = color("--mono");
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
@@ -16,39 +17,45 @@ export function drawBars(canvas, bars) {
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, w, h);
 
-  const top = 18;
+  const top = 16;
   const bottom = 18;
   const plotH = h - top - bottom;
+  const baseY = top + plotH;
   const max = Math.max(...bars.map((b) => b.value), 1e-9);
   const slot = w / bars.length;
-  const barW = Math.min(26, slot * 0.6);
+  const barW = Math.min(28, slot * 0.62);
 
-  ctx.font = "600 11px system-ui, sans-serif";
   ctx.textAlign = "center";
-
   bars.forEach((b, i) => {
-    const x = slot * i + slot / 2;
-    const bh = b.value > 0 ? Math.max(3, (b.value / max) * plotH) : 2;
-    const y = top + plotH - bh;
-    ctx.fillStyle = b.highlight ? color("--accent") : b.value > 0 ? color("--bar") : color("--line");
-    roundRect(ctx, x - barW / 2, y, barW, bh, Math.min(6, bh / 2));
-    ctx.fill();
+    const x = Math.round(slot * i + slot / 2);
+    const bh = b.value > 0 ? Math.max(2, (b.value / max) * plotH) : 0;
+    const left = Math.round(x - barW / 2);
+    const y = Math.round(baseY - bh);
+    if (bh) {
+      if (b.highlight) {
+        ctx.fillStyle = color("--tape");
+        ctx.fillRect(left, y, barW, bh);
+        ctx.strokeStyle = color("--on-tape");
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(left + 0.75, y + 0.75, barW - 1.5, bh - 0.75);
+      } else {
+        ctx.fillStyle = color("--line-strong");
+        ctx.fillRect(left, y, barW, bh);
+      }
+    }
 
+    ctx.font = `${b.highlight ? 700 : 500} 10.5px ${mono}`;
     ctx.fillStyle = b.highlight ? color("--ink") : color("--muted");
-    ctx.fillText(b.label, x, h - 4);
+    ctx.fillText(b.label, x, h - 3);
     if (b.display && (b.highlight || b.value === max)) {
+      ctx.font = `700 10.5px ${mono}`;
       ctx.fillStyle = color("--ink");
-      ctx.fillText(b.display, x, Math.max(11, y - 5));
+      ctx.fillText(b.display, x, Math.max(10, y - 5));
     }
   });
-}
 
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.lineTo(x + w, y + h);
-  ctx.lineTo(x, y + h);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
+  // Baseline with ticks under each day, like a ruler.
+  ctx.fillStyle = color("--ink");
+  ctx.fillRect(0, baseY, w, 1.5);
+  bars.forEach((_, i) => ctx.fillRect(Math.round(slot * i + slot / 2), baseY, 1.5, 4));
 }

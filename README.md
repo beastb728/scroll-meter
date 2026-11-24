@@ -7,28 +7,35 @@ Fun, a little guilt-inducing, and made to be screenshotted.
 
 <p>
   <img src="docs/popup.png" alt="Scroll Meter popup" width="260" />
-  <img src="docs/card-poster.png" alt="Scroll Wrapped poster card" width="260" />
+  <img src="docs/card-tape.png" alt="Scroll Wrapped tape card" width="260" />
   <img src="docs/card-receipt.png" alt="Scroll Wrapped receipt card" width="260" />
 </p>
 
 ## Features
 
-- **Daily total** with a comparison that fits the number (blue whales → Eiffel Towers → Everest)
+- **Daily total** with a comparison that fits the number (blue whales → Eiffel Towers → Everest),
+  and a ruler showing how far it is to the next landmark
 - **Top sites** and a **7-day chart** in the toolbar popup
+- **Daily records**: top scrolling speed ("faster than a walking human"), longest binge on one
+  site, and how much you scrolled back up
 - **Scroll Wrapped**: a weekly shareable card with your total, worst day, worst site,
-  after-midnight scrolling and a roast title ("Reddit Archaeologist", "3 AM Scroller",
-  "Professional Doomscroller"). Two styles (Poster, Receipt), two sizes (Story 9:16 for
+  longest binge, top speed, after-midnight scrolling and a roast title ("Reddit Archaeologist",
+  "3 AM Scroller", "Professional Doomscroller"). Two styles (Tape, where the ruler is scaled to
+  your week, and Receipt), two sizes (Story 9:16 for
   Instagram/WhatsApp Status, Square 1:1 for feeds). Download as PNG or copy to clipboard.
 - **Opt-in sites**: pick Reddit, X, YouTube, Instagram and friends (or any domain) and Chrome
   asks once per site. "Measure every website" is there if you want it, but it is never the default.
 - **Daily limit nudge**: a gentle card slides up when you pass your limit ("You've reached the end.
   Of today's scrolling budget, anyway."), then again every extra 50%. It never blocks anything.
-- **Live climb**: while you scroll, a small pill shows your progress to the next landmark,
-  and celebrates when you pass one ("You just scrolled past a blue whale!").
+- **Live climb**: while you scroll, a strip of tape in the corner counts down to the next
+  landmark and marks it when you pass one ("You just passed a blue whale").
 - **Toolbar badge** with today's distance.
 - Metric or imperial units, JSON export, one-click delete.
 
-<img src="docs/milestone.png" alt="Milestone celebration pill" width="420" />
+<p>
+  <img src="docs/milestone.png" alt="Milestone overlay" width="400" />
+  <img src="docs/nudge.png" alt="Daily limit nudge" width="400" />
+</p>
 
 ## How it measures
 
@@ -36,6 +43,8 @@ Fun, a little guilt-inducing, and made to be screenshotted.
   containers (feeds that don't scroll the window) is added up as absolute distance.
 - Pixels become real distance using the CSS definition: 1 px = 1/96 inch ≈ 0.0265 cm.
   Your physical screen size varies, but the number stays consistent.
+- Only scrolling within 3 seconds of your own input (wheel, touch, keys, dragging the scrollbar)
+  counts. Pages that scroll themselves (live chats, tickers, auto-loading feeds) are ignored.
 - Single jumps over 5,000 px (anchor links, "scroll restoration") and sub-pixel jitter are ignored.
 - Pages that use transform-based or virtual scrolling may undercount.
 

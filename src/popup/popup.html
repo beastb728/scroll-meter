@@ -7,36 +7,71 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header class="top">
-      <div class="brand"><img src="../../icons/icon32.png" alt="" width="20" height="20" /> Scroll Meter</div>
-      <button id="settings" class="icon-btn" title="Settings" aria-label="Settings">⚙︎</button>
+    <header class="bar tape">
+      <span class="wordmark">SCROLL METER</span>
+      <button id="settings" class="link">Settings</button>
     </header>
 
-    <section class="hero">
-      <div class="label">Today you scrolled</div>
-      <div id="today" class="big">0 m</div>
-      <div id="compare" class="compare"></div>
-    </section>
+    <main>
+      <section class="hero">
+        <div class="hero-top">
+          <span class="label">Today</span>
+          <span id="date" class="label num"></span>
+        </div>
+        <div id="today" class="big num">0 m</div>
+        <p id="compare" class="compare"></p>
 
-    <section id="site-status" class="site-status" hidden></section>
+        <div id="climb" class="climb" hidden>
+          <div class="ruler"><i id="climb-fill"></i></div>
+          <div class="climb-labels">
+            <span id="climb-from"></span>
+            <span id="climb-to"></span>
+          </div>
+          <p id="climb-left" class="climb-left"></p>
+        </div>
+      </section>
 
-    <section class="card">
-      <div class="card-head"><h2>Top sites today</h2></div>
-      <ol id="sites" class="sites"></ol>
-      <p id="sites-empty" class="empty" hidden>Nothing yet. Go scroll something (or don't).</p>
-    </section>
+      <section id="site-status" class="site-status" hidden></section>
 
-    <section class="card">
-      <div class="card-head">
-        <h2>Last 7 days</h2>
-        <span id="week-total" class="muted"></span>
-      </div>
-      <canvas id="chart" width="300" height="120" aria-label="Distance scrolled per day, last 7 days"></canvas>
-    </section>
+      <section class="block">
+        <h2 class="section-title">Where it went</h2>
+        <ol id="sites" class="sites"></ol>
+        <p id="sites-empty" class="empty" hidden>Nothing measured yet today.</p>
+      </section>
 
-    <button id="wrapped" class="primary">🎁 Open your Scroll Wrapped</button>
+      <section id="records-block" class="block" hidden>
+        <h2 class="section-title">Today's records</h2>
+        <dl class="records">
+          <div>
+            <dt>Top speed</dt>
+            <dd id="rec-speed" class="num"></dd>
+            <dd id="rec-speed-sub" class="sub"></dd>
+          </div>
+          <div>
+            <dt>Longest binge</dt>
+            <dd id="rec-binge" class="num"></dd>
+            <dd id="rec-binge-sub" class="sub"></dd>
+          </div>
+          <div>
+            <dt>Scrolled back up</dt>
+            <dd id="rec-up" class="num"></dd>
+            <dd class="sub">second thoughts</dd>
+          </div>
+        </dl>
+      </section>
 
-    <footer class="privacy">🔒 Only domain names and distances, stored on this device. Nothing leaves your browser.</footer>
+      <section class="block">
+        <div class="block-head">
+          <h2 class="section-title">Last 7 days</h2>
+          <span id="week-total" class="num muted"></span>
+        </div>
+        <canvas id="chart" aria-label="Distance scrolled per day, last 7 days"></canvas>
+      </section>
+
+      <button id="wrapped" class="btn solid wide">Make this week's card</button>
+
+      <footer class="privacy">Stored on this device only. Nothing is uploaded.</footer>
+    </main>
 
     <script type="module" src="popup.js"></script>
   </body>

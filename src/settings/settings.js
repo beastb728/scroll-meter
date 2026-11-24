@@ -3,7 +3,13 @@ import { formatDistance } from "../lib/units.js";
 import { PRESETS, ALL_SITES, originPatterns, parseDomainInput, coversAllSites, customDomains } from "../lib/sites.js";
 
 const $ = (id) => document.getElementById(id);
-const LIMITS = [0, 50, 100, 200, 300, 500, 1000, 2000];
+// Daily limit choices in each unit system, stored as meters.
+const FT = 0.3048;
+const MI = 1609.344;
+const LIMITS = {
+  metric: [0, 50, 100, 200, 300, 500, 1000, 2000],
+  imperial: [0, 150 * FT, 300 * FT, 500 * FT, 1000 * FT, 2000 * FT, 0.5 * MI, 1 * MI],
+};
 
 $("welcome").hidden = !new URLSearchParams(location.search).has("welcome");
 
@@ -80,11 +86,13 @@ async function renderPrefs() {
   $("badge").checked = s.badge;
   const sel = $("limit");
   sel.replaceChildren();
-  const values = LIMITS.includes(s.limitMeters) ? LIMITS : [...LIMITS, s.limitMeters].sort((a, b) => a - b);
+  const choices = LIMITS[s.units] || LIMITS.metric;
+  const near = (a, b) => Math.abs(a - b) < 0.01;
+  const values = choices.some((m) => near(m, s.limitMeters)) ? choices : [...choices, s.limitMeters].sort((a, b) => a - b);
   for (const m of values) {
     sel.append(new Option(m === 0 ? "No limit" : formatDistance(m, s.units), String(m)));
   }
-  sel.value = String(s.limitMeters);
+  sel.value = String(values.find((m) => near(m, s.limitMeters)));
 }
 
 $("units").addEventListener("change", async (e) => {
@@ -114,9 +122,10 @@ $("export").addEventListener("click", async () => {
 });
 
 $("wipe").addEventListener("click", async () => {
-  if (!confirm("Delete all Scroll Meter history? Your settings and site choices stay. This can't be undone.")) return;
+  if (!confirm("Delete all scroll history? Your settings and site choices stay. This can't be undone.")) return;
   const { settings } = await chrome.storage.local.get("settings");
   await chrome.storage.local.clear();
+  await chrome.storage.session.clear();
   if (settings) await chrome.storage.local.set({ settings });
   status("All scroll history deleted.");
 });

@@ -9,28 +9,34 @@
     <link rel="stylesheet" href="wrapped.css" />
   </head>
   <body>
+    <header class="masthead tape">
+      <div class="masthead-inner">
+        <span class="wordmark">SCROLL METER</span>
+        <span class="masthead-sub">Weekly card</span>
+      </div>
+    </header>
     <main class="layout">
       <section class="preview">
         <canvas id="card" aria-label="Your weekly Scroll Wrapped card"></canvas>
       </section>
 
       <aside class="controls">
-        <div class="brand"><img src="../../icons/icon48.png" alt="" width="36" height="36" /> Scroll Wrapped</div>
-        <p id="demo-note" class="demo" hidden>Showing demo data.</p>
+        <h1>Your week, measured.</h1>
+        <p id="demo-note" class="demo" hidden>Showing made-up demo data.</p>
 
         <div class="group">
           <div class="group-label">Week</div>
           <div class="week-nav">
-            <button id="prev" class="ghost" aria-label="Previous week">◀</button>
+            <button id="prev" class="btn quiet" aria-label="Previous week">←</button>
             <span id="range" class="range"></span>
-            <button id="next" class="ghost" aria-label="Next week">▶</button>
+            <button id="next" class="btn quiet" aria-label="Next week">→</button>
           </div>
         </div>
 
         <div class="group">
           <div class="group-label">Style</div>
           <div class="chips" data-key="theme">
-            <button class="chip" data-value="poster">Poster</button>
+            <button class="chip" data-value="tape">Tape</button>
             <button class="chip" data-value="receipt">Receipt</button>
           </div>
         </div>
@@ -45,12 +51,12 @@
         </div>
 
         <div class="actions">
-          <button id="download" class="primary">Download PNG</button>
-          <button id="copy" class="ghost">Copy image</button>
+          <button id="download" class="btn solid">Download PNG</button>
+          <button id="copy" class="btn">Copy image</button>
           <span id="toast" class="toast" role="status"></span>
         </div>
 
-        <p class="privacy">🔒 The card is drawn on your device. Nothing is uploaded unless you share it yourself.</p>
+        <p class="privacy">The card is drawn on your device. It only goes somewhere if you post it.</p>
       </aside>
     </main>
     <script type="module" src="wrapped.js"></script>

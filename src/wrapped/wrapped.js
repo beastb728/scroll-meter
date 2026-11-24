@@ -1,5 +1,5 @@
 import { lastNDays, getDays, getSettings, parseDayKey } from "../lib/store.js";
-import { formatDistance, compare } from "../lib/units.js";
+import { formatDistance, formatSpeed, formatDuration, compare } from "../lib/units.js";
 import { summarize, roastTitle, weekdayName, weekdayShort } from "../lib/stats.js";
 import { drawCard } from "./card.js";
 
@@ -9,7 +9,7 @@ const DEMO = params.has("demo");
 
 const state = {
   week: 0, // 0 = the 7 days ending today, 1 = the 7 days before that...
-  theme: params.get("theme") || "poster",
+  theme: params.get("theme") || "tape",
   format: params.get("format") || "story",
 };
 
@@ -33,6 +33,7 @@ function demoData(keys) {
   const shape = [120, 60, 210, 40, 95, 150, 147];
   const days = {};
   const hours = {};
+  const metas = {};
   keys.forEach((k, i) => {
     const m = shape[i];
     days[k] = { "reddit.com": m * 0.55 * M, "x.com": m * 0.25 * M, "youtube.com": m * 0.12 * M, "linkedin.com": m * 0.08 * M };
@@ -40,26 +41,33 @@ function demoData(keys) {
     h[1] = m * 0.3 * M;
     h[14] = m * 0.7 * M;
     hours[k] = h;
+    metas[k] = { upPx: m * 0.12 * M, peakPxS: 6000 + i * 400, binge: { site: "reddit.com", ms: (12 + i * 4) * 60000, px: m * 0.4 * M } };
   });
-  return { days, hours };
+  return { days, hours, metas };
 }
 
 async function cardData(keys, units) {
-  const { days, hours } = DEMO ? demoData(keys) : await getDays(keys);
-  const s = summarize(keys, days, hours);
+  const { days, hours, metas } = DEMO ? demoData(keys) : await getDays(keys);
+  const s = summarize(keys, days, hours, metas);
   const c = compare(s.totalMeters);
   const roast = roastTitle(s);
   const maxSite = s.topSites[0]?.px || 1;
   return {
     range: rangeLabel(keys),
     total: formatDistance(s.totalMeters, units),
+    totalMeters: s.totalMeters,
+    units,
     compare: c.text,
-    emoji: c.emoji,
     title: roast.title,
     line: roast.line,
-    worstDay: s.worstDay?.px > 0 ? { name: weekdayName(s.worstDay.key), dist: formatDistance(s.worstDay.meters, units) } : null,
-    worstSite: s.worstSite ? { site: s.worstSite.site, dist: formatDistance(s.worstSite.meters, units) } : null,
-    late: s.lateMeters >= 1 ? formatDistance(s.lateMeters, units) : null,
+    stats: [
+      s.worstDay?.px > 0 && { label: "Worst day", value: `${weekdayName(s.worstDay.key)} · ${formatDistance(s.worstDay.meters, units)}` },
+      s.worstSite && { label: "Worst site", value: `${s.worstSite.site} · ${formatDistance(s.worstSite.meters, units)}` },
+      s.binge && { label: "Longest binge", value: `${formatDuration(s.binge.ms)} on ${s.binge.site}`, receipt: formatDuration(s.binge.ms) },
+      s.topSpeed > 0 && { label: "Top speed", value: formatSpeed(s.topSpeed, units), receipt: formatSpeed(s.topSpeed, units) },
+      s.lateMeters >= 1 && { label: "After midnight", value: formatDistance(s.lateMeters, units), receipt: formatDistance(s.lateMeters, units) },
+      s.upShare > 0 && { label: "Scrolled back up", value: `${Math.round(s.upShare * 100)}%` },
+    ].filter(Boolean),
     days: s.perDay.map((d) => ({
       label: `${weekdayShort(d.key)} ${fmtDay(d.key, { day: "numeric" })}`,
       dist: formatDistance(d.meters, units),

@@ -9,28 +9,29 @@
     <link rel="stylesheet" href="settings.css" />
   </head>
   <body>
+    <header class="masthead tape">
+      <div class="masthead-inner">
+        <span class="wordmark">SCROLL METER</span>
+        <span class="masthead-sub">Settings</span>
+      </div>
+    </header>
     <main class="wrap">
-      <header class="head">
-        <img src="../../icons/icon48.png" alt="" width="40" height="40" />
-        <h1>Scroll Meter</h1>
-      </header>
-
       <section id="welcome" class="welcome" hidden>
-        <h2>Welcome 👋 Let's measure your thumb.</h2>
+        <h1>First, pick what to measure.</h1>
         <p>
-          Pick the sites you want measured. Chrome will ask you to confirm each one. Scroll Meter can only run on the
-          sites you choose, and even there it only reads how far you scroll, never what's on the page.
+          Scroll Meter only runs on sites you switch on below. Chrome will ask you to confirm each one. On those sites it
+          reads how far you scroll and nothing else: no page content, no URLs.
         </p>
       </section>
 
       <section class="panel">
-        <h2>Sites to measure</h2>
-        <p class="sub">Tap to turn on or off.</p>
+        <h2 class="section-title">Sites to measure</h2>
+        <p class="sub">Click to switch a site on or off.</p>
         <div id="presets" class="presets"></div>
 
         <form id="add-form" class="add">
           <input id="add-input" type="text" placeholder="Add another site, e.g. medium.com" autocomplete="off" spellcheck="false" />
-          <button class="ghost" type="submit">Add</button>
+          <button class="btn" type="submit">Add</button>
         </form>
         <p id="add-error" class="error" hidden></p>
         <ul id="custom" class="custom"></ul>
@@ -48,7 +49,7 @@
       </section>
 
       <section class="panel">
-        <h2>Daily limit</h2>
+        <h2 class="section-title">Daily limit</h2>
         <label class="field">
           <span>Give me a gentle nudge after</span>
           <select id="limit"></select>
@@ -57,7 +58,7 @@
       </section>
 
       <section class="panel">
-        <h2>Display</h2>
+        <h2 class="section-title">Display</h2>
         <label class="field">
           <span>Units</span>
           <select id="units">
@@ -68,7 +69,7 @@
         <label class="switch-row field">
           <span>
             Live climb while scrolling
-            <span class="sub">A small pill shows your progress to the next landmark and celebrates when you pass one.</span>
+            <span class="sub">A strip of tape in the corner shows how far it is to the next landmark, and marks it when you pass one.</span>
           </span>
           <input id="overlay" type="checkbox" role="switch" />
         </label>
@@ -81,14 +82,14 @@
       </section>
 
       <section class="panel">
-        <h2>Your data</h2>
+        <h2 class="section-title">Your data</h2>
         <p class="sub">
-          Stored only on this device: one number per site per day, plus totals per hour. No URLs, no page content,
-          nothing sent anywhere.
+          Stored only on this device: distance per site per day, hourly totals, and daily records (top speed, longest
+          binge, how much you scrolled back up). No URLs, no page content, nothing sent anywhere.
         </p>
         <div class="buttons">
-          <button id="export" class="ghost">Export as JSON</button>
-          <button id="wipe" class="ghost danger">Delete all data</button>
+          <button id="export" class="btn quiet">Export as JSON</button>
+          <button id="wipe" class="btn quiet danger">Delete scroll history</button>
         </div>
         <p id="data-status" class="status" role="status"></p>
       </section>

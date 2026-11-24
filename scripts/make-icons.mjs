@@ -1,11 +1,10 @@
 // Generates the extension icons (no dependencies): node scripts/make-icons.mjs
-// Design on a 128 grid: coral rounded square, white down arrow, ruler ticks.
+// Design on a 128 grid: tape-yellow rounded square, ink down arrow, ruler ticks.
 import { writeFileSync, mkdirSync } from "node:fs";
 import { deflateSync } from "node:zlib";
 
-const BG_TOP = [255, 112, 67];
-const BG_BOTTOM = [244, 63, 94];
-const WHITE = [255, 255, 255];
+const TAPE = [255, 203, 5];
+const INK = [22, 21, 19];
 
 function inRoundRect(x, y, x0, y0, x1, y1, r) {
   if (x < x0 || x > x1 || y < y0 || y > y1) return false;
@@ -34,10 +33,9 @@ function isMark(x, y) {
 
 function pixel(x, y) {
   // returns [r,g,b,a] in 0..1 coverage terms on the 128 grid
-  if (!inRoundRect(x, y, 4, 4, 124, 124, 28)) return null;
-  if (isMark(x, y)) return WHITE;
-  const t = y / 128;
-  return BG_TOP.map((c, i) => c + (BG_BOTTOM[i] - c) * t);
+  if (!inRoundRect(x, y, 4, 4, 124, 124, 22)) return null;
+  if (isMark(x, y)) return INK;
+  return TAPE;
 }
 
 function render(size) {

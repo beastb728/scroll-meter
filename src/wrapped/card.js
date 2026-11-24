@@ -1,6 +1,6 @@
 // Draws the shareable weekly card onto a canvas.
 // Formats: "story" 1080x1920 (Instagram / WhatsApp Status), "square" 1080x1080 (posts, X, Reddit).
-// Themes:  "poster" (bold gradient) and "receipt" (itemized receipt of shame).
+// Themes:  "tape" (a strip of measuring tape scaled to your week) and "receipt" (itemized receipt of shame).
 
 export const FORMATS = {
   story: { w: 1080, h: 1920 },
@@ -8,23 +8,27 @@ export const FORMATS = {
 };
 
 const SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif';
-const MONO = 'ui-monospace, "SF Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace';
+const MONO = 'ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace';
+const TAPE = "#ffcb05";
+const INK = "#161513";
+const RED = "#d93025";
+const PAPER = "#f5f2ea";
 
 /**
  * @param data {
- *   range, total, compare, emoji, title, line,
- *   worstDay: {name, dist} | null, worstSite: {site, dist} | null, late: string | null,
+ *   range, total, totalMeters, units, compare, title, line,
+ *   stats: [{label, value, receipt?}], // receipt: short value, shown on the receipt too
  *   days: [{label, dist}], sites: [{site, dist, frac}]
  * }
  */
-export function drawCard(canvas, data, { theme = "poster", format = "story" } = {}) {
+export function drawCard(canvas, data, { theme = "tape", format = "story" } = {}) {
   const { w, h } = FORMATS[format];
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
   ctx.textBaseline = "alphabetic";
   if (theme === "receipt") drawReceipt(ctx, w, h, data, format);
-  else drawPoster(ctx, w, h, data, format);
+  else drawTape(ctx, w, h, data, format);
 }
 
 // ---------- helpers ----------
@@ -59,225 +63,161 @@ function wrap(ctx, text, maxW) {
   return lines;
 }
 
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-function brandMark(ctx, x, y, size) {
-  // Mini version of the icon: white rounded square, coral arrow + ticks.
-  const k = size / 128;
+function spaced(ctx, text, x, y, spacing) {
   ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(k, k);
-  ctx.fillStyle = "#fff";
-  roundRect(ctx, 4, 4, 120, 120, 28);
-  ctx.fill();
-  ctx.fillStyle = "#ff5a36";
-  roundRect(ctx, 66, 26, 16, 54, 4);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(50, 74);
-  ctx.lineTo(98, 74);
-  ctx.lineTo(74, 104);
-  ctx.closePath();
-  ctx.fill();
-  for (const [ty, len] of [[30, 46], [44, 38], [58, 46], [72, 38], [86, 46], [100, 38]]) {
-    roundRect(ctx, 20, ty - 3, len - 20, 6, 3);
-    ctx.fill();
-  }
+  ctx.letterSpacing = `${spacing}px`;
+  ctx.fillText(text, x, y);
   ctx.restore();
 }
 
-// ---------- poster ----------
+/** A "nice" ruler step (1, 2, 5 x 10^n) giving roughly `count` labelled marks. */
+function niceStep(total, count) {
+  const raw = Math.max(total, 1e-6) / count;
+  const pow = 10 ** Math.floor(Math.log10(raw));
+  for (const m of [1, 2, 5, 10]) if (raw <= m * pow) return m * pow;
+  return 10 * pow;
+}
 
-function drawPoster(ctx, w, h, d, format) {
+function trimNum(n) {
+  return n >= 100 ? String(Math.round(n)) : String(+n.toFixed(n >= 10 ? 0 : 1));
+}
+
+// ---------- tape ----------
+
+function drawTape(ctx, w, h, d, format) {
   const story = format === "story";
-  const pad = 96;
-  const inner = w - pad * 2;
+  const k = story ? 1 : 0.82; // type scale
 
-  const g = ctx.createLinearGradient(0, 0, w, h);
-  g.addColorStop(0, "#ff7a45");
-  g.addColorStop(0.55, "#f43f5e");
-  g.addColorStop(1, "#be185d");
-  ctx.fillStyle = g;
+  ctx.fillStyle = TAPE;
   ctx.fillRect(0, 0, w, h);
 
-  // Ruler down the left edge.
-  ctx.fillStyle = "rgba(255,255,255,0.22)";
-  for (let y = 24, i = 0; y < h; y += 24, i++) {
-    const len = i % 10 === 0 ? 52 : i % 5 === 0 ? 36 : 20;
-    ctx.fillRect(0, y, len, 4);
+  // Ruler down the left edge, scaled so the whole card is your week.
+  const footerH = story ? 150 : 110;
+  const rulerH = h - footerH;
+  const unitM = d.units === "imperial" ? 0.3048 : 1; // label in ft or m
+  const unitLabel = d.units === "imperial" ? "ft" : "m";
+  const total = Math.max(d.totalMeters / unitM, 1);
+  const step = niceStep(total, story ? 14 : 9);
+  const pxPer = rulerH / total;
+  const minorEvery = step / 10;
+  ctx.fillStyle = INK;
+  for (let i = 0, v = 0; v <= total + 1e-9; i++, v = i * minorEvery) {
+    const y = Math.round(v * pxPer);
+    const major = i % 10 === 0;
+    const mid = i % 5 === 0;
+    const len = major ? 64 : mid ? 42 : 24;
+    if (minorEvery * pxPer >= 5 || mid) ctx.fillRect(0, y, len, major ? 4 : 2.5);
+    if (major && i > 0) {
+      const n = i / 10;
+      ctx.fillStyle = n % 5 === 0 ? RED : INK;
+      font(ctx, 800, 30 * k, MONO);
+      ctx.fillText(trimNum(v), 76, y + 11);
+      ctx.fillStyle = INK;
+    }
+  }
+  font(ctx, 700, 22 * k, MONO);
+  ctx.fillText(unitLabel, 76, 34);
+
+  const x = story ? 230 : 210;
+  const right = w - 80;
+  const inner = right - x;
+  let y = story ? 150 : 104;
+
+  ctx.fillStyle = INK;
+  font(ctx, 800, 30 * k, MONO);
+  spaced(ctx, "SCROLL WRAPPED", x, y, 6);
+  y += 46 * k;
+  font(ctx, 500, 28 * k, MONO);
+  ctx.fillText(d.range, x, y);
+
+  y += story ? 170 : 104;
+  font(ctx, 650, 50 * k);
+  ctx.fillText("This week I scrolled", x, y);
+
+  // Big number with a smaller unit.
+  const [num, unit] = splitUnit(d.total);
+  y += story ? 236 : 182;
+  const numSize = fitText(ctx, num, 900, story ? 250 : 200, inner - 150);
+  ctx.fillText(num, x - 8, y);
+  const numW = ctx.measureText(num).width;
+  font(ctx, 800, numSize * 0.38);
+  ctx.fillText(unit, x + numW + 14, y);
+
+  y += story ? 84 : 66;
+  font(ctx, 700, 46 * k);
+  for (const line of wrap(ctx, `That's ${d.compare}.`, inner).slice(0, 2)) {
+    ctx.fillText(line, x, y);
+    y += 58 * k;
   }
 
-  // Big faint arrow in the background.
+  // Title on a label-maker strip.
+  y += story ? 60 : 22;
+  font(ctx, 700, 24 * k, MONO);
+  spaced(ctx, "OFFICIAL TITLE", x, y, 4);
+  y += 22;
+  const titleSize = fitText(ctx, d.title.toUpperCase(), 800, 60 * k, inner - 56, MONO, 30);
+  const stripH = titleSize * 1.75;
+  const stripW = Math.min(inner, ctx.measureText(d.title.toUpperCase()).width + 56);
   ctx.save();
-  ctx.globalAlpha = 0.08;
-  ctx.fillStyle = "#fff";
-  const ax = w - 250, ay = story ? 260 : 140, aw = story ? 140 : 100, ah = story ? 900 : 560;
-  ctx.fillRect(ax - aw / 2, ay, aw, ah);
-  ctx.beginPath();
-  ctx.moveTo(ax - aw * 1.6, ay + ah);
-  ctx.lineTo(ax + aw * 1.6, ay + ah);
-  ctx.lineTo(ax, ay + ah + aw * 2);
-  ctx.closePath();
-  ctx.fill();
+  ctx.translate(x, y);
+  ctx.rotate(-0.018);
+  ctx.fillStyle = INK;
+  ctx.fillRect(0, 0, stripW, stripH);
+  ctx.fillStyle = TAPE;
+  ctx.fillText(d.title.toUpperCase(), 28, stripH * 0.68);
   ctx.restore();
-
-  ctx.fillStyle = "#fff";
-  ctx.textAlign = "left";
-  let y = story ? 170 : 116;
-
-  font(ctx, 800, 40);
-  ctx.save();
-  ctx.letterSpacing = "8px";
-  ctx.fillText("SCROLL WRAPPED", pad, y);
-  ctx.restore();
-  y += 52;
-  ctx.globalAlpha = 0.85;
-  font(ctx, 500, 34);
-  ctx.fillText(d.range, pad, y);
-  ctx.globalAlpha = 1;
-
-  y += story ? 190 : 96;
-  font(ctx, 600, story ? 52 : 44);
-  ctx.fillText("This week I scrolled", pad, y);
-
-  y += story ? 220 : 160;
-  fitText(ctx, d.total, 900, story ? 240 : 190, inner);
-  ctx.fillText(d.total, pad - 6, y);
-
-  y += story ? 86 : 64;
-  font(ctx, 650, story ? 50 : 40);
-  for (const line of wrap(ctx, `${d.emoji} That's ${d.compare}.`, inner).slice(0, 2)) {
-    ctx.fillText(line, pad, y);
-    y += story ? 62 : 50;
-  }
-
-  // Title badge
-  y += story ? 60 : 24;
-  font(ctx, 900, story ? 76 : 60);
-  const titleLines = wrap(ctx, d.title, inner - 80).slice(0, 2);
-  const lineH = story ? 86 : 68;
-  const badgeH = (story ? 96 : 76) + titleLines.length * lineH;
-  ctx.fillStyle = "#fff";
-  ctx.save();
-  ctx.shadowColor = "rgba(80,0,30,0.25)";
-  ctx.shadowBlur = 40;
-  ctx.shadowOffsetY = 14;
-  roundRect(ctx, pad, y, inner, badgeH, 36);
-  ctx.fill();
-  ctx.restore();
-  ctx.fillStyle = "#be185d";
-  font(ctx, 800, story ? 28 : 24);
-  ctx.save();
-  ctx.letterSpacing = "5px";
-  ctx.fillText("OFFICIAL TITLE", pad + 40, y + (story ? 62 : 50));
-  ctx.restore();
-  ctx.fillStyle = "#1d1a19";
-  font(ctx, 900, story ? 76 : 60);
-  titleLines.forEach((line, i) => ctx.fillText(line, pad + 40, y + (story ? 62 : 50) + (i + 1) * lineH));
-  y += badgeH;
+  y += stripH + (story ? 54 : 30);
 
   if (story) {
-    y += 52;
-    ctx.fillStyle = "#fff";
-    font(ctx, 500, 36);
-    ctx.globalAlpha = 0.92;
+    ctx.fillStyle = INK;
+    font(ctx, 500, 34);
     for (const line of wrap(ctx, d.line, inner).slice(0, 2)) {
-      ctx.fillText(line, pad, y);
-      y += 46;
+      ctx.fillText(line, x, y);
+      y += 44;
     }
-    ctx.globalAlpha = 1;
+    y += 26;
   }
 
-  // Stat tiles
-  const tiles = [
-    d.worstDay && ["Worst day", d.worstDay.name, d.worstDay.dist],
-    d.worstSite && ["Worst site", d.worstSite.site, d.worstSite.dist],
-    d.late && ["After midnight", d.late, "0:00–5:00"],
-  ].filter(Boolean);
-  if (tiles.length) {
-    y += story ? 50 : 30;
-    const gap = 24;
-    const tw = (inner - gap * (tiles.length - 1)) / tiles.length;
-    const th = story ? 190 : 150;
-    tiles.forEach(([label, value, sub], i) => {
-      const x = pad + i * (tw + gap);
-      ctx.fillStyle = "rgba(255,255,255,0.16)";
-      roundRect(ctx, x, y, tw, th, 28);
-      ctx.fill();
-      ctx.fillStyle = "#fff";
-      ctx.globalAlpha = 0.8;
-      font(ctx, 700, 26);
-      ctx.fillText(label.toUpperCase(), x + 28, y + 50);
-      ctx.globalAlpha = 1;
-      fitText(ctx, value, 800, 44, tw - 56);
-      ctx.fillText(value, x + 28, y + (story ? 112 : 98));
-      ctx.globalAlpha = 0.85;
-      font(ctx, 500, 30);
-      ctx.fillText(sub, x + 28, y + (story ? 156 : 132));
-      ctx.globalAlpha = 1;
-    });
-    y += th;
+  // Stats as a ruled table.
+  const rows = d.stats.slice(0, story ? 6 : 3);
+  // Stretch rows to use the free space above the footer.
+  const free = h - footerH - (story ? 90 : 50) - y;
+  const rowH = rows.length ? Math.max(story ? 84 : 64, Math.min(story ? 112 : 76, free / rows.length)) : 0;
+  ctx.fillStyle = INK;
+  for (const r of rows) {
+    ctx.fillRect(x, y, inner, 3);
+    font(ctx, 700, 22 * k, MONO);
+    spaced(ctx, r.label.toUpperCase(), x, y + rowH * 0.6, 3);
+    ctx.textAlign = "right";
+    fitText(ctx, r.value, 750, 38 * k, inner * 0.6);
+    ctx.fillText(r.value, right, y + rowH * 0.64);
+    ctx.textAlign = "left";
+    y += rowH;
   }
+  if (rows.length) ctx.fillRect(x, y, inner, 3);
 
-  // Top sites (story only)
-  if (story && d.sites.length) {
-    y += 64;
-    ctx.fillStyle = "#fff";
-    font(ctx, 800, 28);
-    ctx.save();
-    ctx.letterSpacing = "5px";
-    ctx.globalAlpha = 0.85;
-    ctx.fillText("WHERE IT WENT", pad, y);
-    ctx.restore();
-    y += 28;
-    for (const s of d.sites.slice(0, 3)) {
-      y += 50;
-      font(ctx, 700, 34);
-      ctx.textAlign = "left";
-      ctx.fillText(s.site, pad, y);
-      ctx.textAlign = "right";
-      font(ctx, 500, 34);
-      ctx.fillText(s.dist, w - pad, y);
-      ctx.textAlign = "left";
-      y += 18;
-      ctx.fillStyle = "rgba(255,255,255,0.2)";
-      roundRect(ctx, pad, y, inner, 12, 6);
-      ctx.fill();
-      ctx.fillStyle = "#fff";
-      roundRect(ctx, pad, y, Math.max(12, inner * s.frac), 12, 6);
-      ctx.fill();
-      y += 16;
-    }
-  }
-
-  // Footer
-  const fy = h - (story ? 110 : 56);
-  brandMark(ctx, pad, fy - 46, 60);
-  ctx.fillStyle = "#fff";
-  ctx.textAlign = "left";
-  font(ctx, 800, 36);
-  ctx.fillText("Scroll Meter", pad + 80, fy - 4);
-  ctx.globalAlpha = 0.85;
-  font(ctx, 500, 30);
+  // Footer band.
+  ctx.fillStyle = INK;
+  ctx.fillRect(0, h - footerH, w, footerH);
+  ctx.fillStyle = TAPE;
+  font(ctx, 800, 34 * k, MONO);
+  spaced(ctx, "SCROLL METER", x, h - footerH / 2 + 12, 6);
+  font(ctx, 500, 30 * k);
   ctx.textAlign = "right";
-  ctx.fillText("How far do you scroll?", w - pad, fy - 4);
-  ctx.globalAlpha = 1;
+  ctx.fillText("How far do you scroll?", right, h - footerH / 2 + 11);
   ctx.textAlign = "left";
+}
+
+function splitUnit(text) {
+  const i = text.lastIndexOf(" ");
+  return i > 0 ? [text.slice(0, i), text.slice(i + 1)] : [text, ""];
 }
 
 // ---------- receipt ----------
 
 function drawReceipt(ctx, w, h, d, format) {
   const story = format === "story";
-  ctx.fillStyle = "#2a2321";
+  ctx.fillStyle = INK;
   ctx.fillRect(0, 0, w, h);
 
   // Rows: [kind, left, right?]
@@ -295,7 +235,9 @@ function drawReceipt(ctx, w, h, d, format) {
   rows.push(["rule"]);
   rows.push(["total", "TOTAL", d.total]);
   rows.push(["wrap", `= ${d.compare}`.toUpperCase()]);
-  if (story && d.late) rows.push(["item", "AFTER MIDNIGHT", d.late]);
+  if (story) {
+    for (const s of d.stats) if (s.receipt) rows.push(["item", s.label.toUpperCase(), s.receipt]);
+  }
   rows.push(["rule"]);
   rows.push(["left", "CUSTOMER TYPE:"]);
   rows.push(["title", d.title.toUpperCase()]);
@@ -322,10 +264,10 @@ function drawReceipt(ctx, w, h, d, format) {
 
   // Paper with zig-zag bottom edge.
   ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.45)";
-  ctx.shadowBlur = 60;
-  ctx.shadowOffsetY = 24;
-  ctx.fillStyle = "#fbf7ee";
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = 50;
+  ctx.shadowOffsetY = 20;
+  ctx.fillStyle = PAPER;
   ctx.beginPath();
   ctx.moveTo(px, py);
   ctx.lineTo(px + paperW, py);
@@ -339,7 +281,7 @@ function drawReceipt(ctx, w, h, d, format) {
   ctx.fill();
   ctx.restore();
 
-  ctx.fillStyle = "#2a2321";
+  ctx.fillStyle = INK;
   let y = py + 60;
   for (const item of layout.items) {
     y += item.h;
@@ -348,13 +290,11 @@ function drawReceipt(ctx, w, h, d, format) {
 
   // Tagline under the receipt (story only).
   if (story) {
-    ctx.fillStyle = "#fbf7ee";
-    ctx.globalAlpha = 0.75;
-    font(ctx, 600, 30, SANS);
+    ctx.fillStyle = TAPE;
+    font(ctx, 700, 28, MONO);
     ctx.textAlign = "center";
-    ctx.fillText("Scroll Meter · How far do you scroll?", w / 2, h - 70);
+    spaced(ctx, "SCROLL METER · HOW FAR DO YOU SCROLL?", w / 2, h - 70, 2);
     ctx.textAlign = "left";
-    ctx.globalAlpha = 1;
   }
 }
 
@@ -398,7 +338,7 @@ function renderRow(ctx, { kind, a, b, lines }, x, innerW, y, size) {
       break;
     case "rule":
       ctx.save();
-      ctx.strokeStyle = "#2a2321";
+      ctx.strokeStyle = INK;
       ctx.lineWidth = 3;
       ctx.setLineDash([10, 9]);
       ctx.beginPath();

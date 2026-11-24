@@ -1,9 +1,8 @@
-import { dayKey, lastNDays, getDays, getSettings } from "../lib/store.js";
-import { pxToMeters, formatDistance, compare } from "../lib/units.js";
+import { dayKey, lastNDays, getDays, getSettings, normalizeDomain } from "../lib/store.js";
+import { pxToMeters, formatDistance, formatSpeed, formatDuration, compare, compareSpeed, climb } from "../lib/units.js";
 import { sum, topSites, weekdayShort } from "../lib/stats.js";
 import { drawBars } from "../ui/chart.js";
 import { originPatterns, coversAllSites } from "../lib/sites.js";
-import { normalizeDomain } from "../lib/store.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -12,16 +11,22 @@ async function render() {
   const units = settings.units;
   const today = dayKey();
   const keys = lastNDays(7);
-  const { days } = await getDays(keys);
+  const { days, metas } = await getDays(keys);
 
   // Hero
+  $("date").textContent = new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
   const todayM = pxToMeters(sum(days[today]));
-  $("today").textContent = formatDistance(todayM, units);
-  if (todayM > 0) {
-    const c = compare(todayM);
-    $("compare").textContent = `${c.emoji} That's ${c.text}.`;
-  } else {
-    $("compare").textContent = "";
+  setMeasure($("today"), formatDistance(todayM, units));
+  $("compare").textContent = todayM > 0 ? `That's ${compare(todayM).text}.` : "Clean slate. Your thumb is rested.";
+
+  // Ruler to the next landmark
+  const c = climb(todayM);
+  $("climb").hidden = !c.next;
+  if (c.next) {
+    $("climb-fill").style.width = `${Math.max(0.5, c.progress * 100)}%`;
+    $("climb-from").textContent = c.prev ? `${c.prev.one} · ${formatDistance(c.prev.meters, units)}` : "Start";
+    $("climb-to").textContent = `${c.next.one} · ${formatDistance(c.next.meters, units)}`;
+    $("climb-left").textContent = `${formatDistance(c.next.meters - todayM, units)} to go until ${c.next.one}.`;
   }
 
   // Top sites
@@ -33,10 +38,10 @@ async function render() {
     const li = document.createElement("li");
     const name = Object.assign(document.createElement("span"), { className: "name", textContent: s.site });
     const dist = Object.assign(document.createElement("span"), {
-      className: "dist",
+      className: "dist num",
       textContent: formatDistance(s.meters, units),
     });
-    const bar = Object.assign(document.createElement("div"), { className: "bar" });
+    const bar = Object.assign(document.createElement("div"), { className: "bar-track" });
     const fill = document.createElement("span");
     fill.style.width = `${Math.max(2, (s.px / maxPx) * 100)}%`;
     bar.append(fill);
@@ -45,11 +50,23 @@ async function render() {
   }
   $("sites-empty").hidden = sites.length > 0;
 
+  // Records
+  const meta = metas[today];
+  $("records-block").hidden = !meta || todayM < 1;
+  if (meta && todayM >= 1) {
+    const mps = pxToMeters(meta.peakPxS || 0);
+    $("rec-speed").textContent = formatSpeed(mps, units);
+    $("rec-speed-sub").textContent = compareSpeed(mps);
+    $("rec-binge").textContent = meta.binge ? formatDuration(meta.binge.ms) : "–";
+    $("rec-binge-sub").textContent = meta.binge?.site || "";
+    $("rec-up").textContent = `${Math.round(((meta.upPx || 0) / sum(days[today])) * 100)}%`;
+  }
+
   // 7-day chart
   const bars = keys.map((k) => {
     const m = pxToMeters(sum(days[k]));
     return {
-      label: k === today ? "Today" : weekdayShort(k),
+      label: k === today ? "Today" : weekdayShort(k).toUpperCase(),
       value: m,
       display: m > 0 ? formatDistance(m, units) : "",
       highlight: k === today,
@@ -58,6 +75,13 @@ async function render() {
   drawBars($("chart"), bars);
   const weekM = bars.reduce((a, b) => a + b.value, 0);
   $("week-total").textContent = weekM > 0 ? `${formatDistance(weekM, units)} total` : "";
+}
+
+/** Renders "147 m" as a big number with a smaller unit. */
+function setMeasure(el, text) {
+  const i = text.lastIndexOf(" ");
+  const unit = Object.assign(document.createElement("span"), { className: "unit", textContent: text.slice(i + 1) });
+  el.replaceChildren(text.slice(0, i), unit);
 }
 
 // "Measure this site" for the current tab. activeTab lets us read its URL while the popup is open.
@@ -84,7 +108,7 @@ async function renderSiteStatus() {
   const patterns = originPatterns(domain);
   const on = coversAllSites(origins) || (await chrome.permissions.contains({ origins: [`${url.origin}/*`] }));
   if (on) {
-    const ok = text(`✓ Measuring ${domain}`);
+    const ok = text(`Measuring ${domain}`);
     ok.className = "ok";
     box.append(ok);
   } else {
@@ -103,7 +127,7 @@ function text(t) {
   return Object.assign(document.createElement("span"), { textContent: t });
 }
 function button(label, onClick) {
-  const b = Object.assign(document.createElement("button"), { className: "ghost", textContent: label });
+  const b = Object.assign(document.createElement("button"), { className: "btn", textContent: label });
   b.addEventListener("click", onClick);
   return b;
 }
