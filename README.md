@@ -156,7 +156,7 @@ Open `src/wrapped/wrapped.html?demo=1` inside the extension to render the weekly
 │ runs on sites you pick     │  ────────────────────────────► │ service worker             │
 │ measures, overlay, nudge   │  ◄──────────────────────────── │ writes, records, badge     │
 └────────────────────────────┘   total, landmarks, nudges     └────────────────────────────┘
-                                                                            │ one write at a time
+                                                                            │ saves
                                                                             ▼
 ┌────────────────────────────┐                                ┌────────────────────────────┐
 │ popup · settings ·         │             reads              │ chrome.storage.local       │
