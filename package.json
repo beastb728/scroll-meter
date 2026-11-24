@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test \"tests/*.test.mjs\"",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "package": "bash scripts/package.sh"
   },
   "license": "MIT"
 }
