@@ -66,11 +66,77 @@
 
   function send(msg) {
     try {
-      chrome.runtime.sendMessage(msg).catch(() => {});
+      chrome.runtime.sendMessage(msg).then(onReply, () => {});
     } catch {
       // Extension was reloaded or removed: this script is orphaned.
       teardown();
     }
+  }
+
+  function onReply(reply) {
+    if (!reply) return;
+    if (reply.stop) return teardown(); // site permission was revoked
+    if (reply.nudge && window === window.top) showNudge(reply.nudge);
+  }
+
+  // ---------- UI (shadow DOM so page styles can't leak in or out) ----------
+
+  let ui = null;
+  function uiRoot() {
+    if (ui) return ui;
+    const host = document.createElement("scroll-meter-ui");
+    host.style.cssText = "all: initial; position: fixed; z-index: 2147483647; inset: auto 0 0 0; pointer-events: none;";
+    const shadow = host.attachShadow({ mode: "closed" });
+    shadow.innerHTML = `<style>
+      :host { all: initial; }
+      * { box-sizing: border-box; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+      .nudge {
+        pointer-events: auto; position: fixed; left: 50%; bottom: 24px; width: min(440px, calc(100vw - 32px));
+        transform: translate(-50%, 140%); transition: transform .45s cubic-bezier(.2,.9,.25,1.2);
+        display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: start;
+        padding: 18px 18px 16px; border-radius: 18px; color: #1d1a19; background: #fff8f1;
+        box-shadow: 0 24px 60px -12px rgba(60, 20, 10, .45), 0 0 0 1px rgba(255, 90, 54, .25);
+      }
+      .nudge.show { transform: translate(-50%, 0); }
+      .emoji { font-size: 34px; line-height: 1; grid-row: span 2; }
+      .title { font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
+      .body { font-size: 14px; line-height: 1.45; color: #5e5550; }
+      .row { grid-column: 2; display: flex; gap: 8px; margin-top: 8px; }
+      button { font: inherit; font-size: 13.5px; font-weight: 700; border: 0; border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+      .ok { color: #fff; background: linear-gradient(135deg, #ff5a36, #f43f5e); }
+      .later { color: #5e5550; background: transparent; }
+      @media (prefers-color-scheme: dark) {
+        .nudge { background: #221c1a; color: #f7efe9; box-shadow: 0 24px 60px -12px rgba(0,0,0,.6), 0 0 0 1px rgba(255,106,72,.35); }
+        .body, .later { color: #b8aaa1; }
+      }
+    </style><div class="slot"></div>`;
+    (document.body || document.documentElement).append(host);
+    ui = shadow;
+    return ui;
+  }
+
+  function showNudge({ title, body, emoji }) {
+    const root = uiRoot();
+    root.querySelector(".nudge")?.remove();
+    const el = document.createElement("div");
+    el.className = "nudge";
+    el.setAttribute("role", "status");
+    const e = Object.assign(document.createElement("div"), { className: "emoji", textContent: emoji });
+    const t = Object.assign(document.createElement("div"), { className: "title", textContent: title });
+    const b = Object.assign(document.createElement("div"), { className: "body", textContent: body });
+    const row = Object.assign(document.createElement("div"), { className: "row" });
+    const ok = Object.assign(document.createElement("button"), { className: "ok", textContent: "I'm done for now" });
+    const later = Object.assign(document.createElement("button"), { className: "later", textContent: "Five more minutes" });
+    const close = () => {
+      el.classList.remove("show");
+      setTimeout(() => el.remove(), 500);
+    };
+    ok.onclick = close;
+    later.onclick = close;
+    row.append(ok, later);
+    el.append(e, t, b, row);
+    root.querySelector(".slot").append(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("show")));
   }
 
   function teardown() {
