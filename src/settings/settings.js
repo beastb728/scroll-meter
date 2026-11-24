@@ -76,6 +76,8 @@ chrome.permissions.onRemoved.addListener(renderSites);
 async function renderPrefs() {
   const s = await getSettings();
   $("units").value = s.units;
+  $("overlay").checked = s.overlay;
+  $("badge").checked = s.badge;
   const sel = $("limit");
   sel.replaceChildren();
   const values = LIMITS.includes(s.limitMeters) ? LIMITS : [...LIMITS, s.limitMeters].sort((a, b) => a - b);
@@ -89,6 +91,8 @@ $("units").addEventListener("change", async (e) => {
   await saveSettings({ units: e.target.value });
   renderPrefs();
 });
+$("overlay").addEventListener("change", (e) => saveSettings({ overlay: e.target.checked }));
+$("badge").addEventListener("change", (e) => saveSettings({ badge: e.target.checked }));
 $("limit").addEventListener("change", (e) => saveSettings({ limitMeters: Number(e.target.value) }));
 
 // ---------- data ----------

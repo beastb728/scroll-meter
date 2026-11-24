@@ -10,8 +10,12 @@
   const MIN_DELTA_PX = 0.5; // sub-pixel jitter
   const FLUSH_MS = 3000;
 
+  const IS_TOP = window === window.top;
+  const M_PER_PX = 2.54 / 96 / 100;
+
   const lastY = new WeakMap();
   let pending = 0;
+  let localPx = 0; // everything this frame has counted, for the live overlay
   let timer = null;
   let alive = true;
 
@@ -42,7 +46,9 @@
     }
     if (delta < MIN_DELTA_PX || delta > MAX_JUMP_PX) return;
     pending += delta;
+    localPx += delta;
     if (!timer) timer = setTimeout(flush, FLUSH_MS);
+    if (overlay) updateOverlay();
   }
 
   // Chrome scrolls on the compositor before input events reach the page, so we
@@ -61,22 +67,29 @@
     const px = Math.floor(pending);
     if (px < 1 || !alive) return;
     pending -= px;
-    send({ type: "scroll", px, host: location.hostname });
+    const sentAt = localPx - pending;
+    send({ type: "scroll", px, host: location.hostname }, sentAt);
   }
 
-  function send(msg) {
+  function send(msg, sentAt = localPx) {
     try {
-      chrome.runtime.sendMessage(msg).then(onReply, () => {});
+      chrome.runtime.sendMessage(msg).then((r) => onReply(r, sentAt), () => {});
     } catch {
       // Extension was reloaded or removed: this script is orphaned.
       teardown();
     }
   }
 
-  function onReply(reply) {
-    if (!reply) return;
+  function onReply(reply, sentAt) {
+    if (!reply || !alive) return;
     if (reply.stop) return teardown(); // site permission was revoked
-    if (reply.nudge && window === window.top) showNudge(reply.nudge);
+    if (!IS_TOP) return;
+    if ("overlay" in reply) overlay = reply.overlay;
+    if (overlay && typeof reply.todayM === "number") {
+      base = { todayM: reply.todayM, localPx: sentAt };
+    }
+    if (reply.nudge) showNudge(reply.nudge);
+    if (overlay && reply.passed) celebrate(reply.passed);
   }
 
   // ---------- UI (shadow DOM so page styles can't leak in or out) ----------
@@ -105,13 +118,29 @@
       button { font: inherit; font-size: 13.5px; font-weight: 700; border: 0; border-radius: 10px; padding: 8px 14px; cursor: pointer; }
       .ok { color: #fff; background: linear-gradient(135deg, #ff5a36, #f43f5e); }
       .later { color: #5e5550; background: transparent; }
+      .pill {
+        position: fixed; right: 18px; bottom: 18px; display: flex; align-items: center; gap: 10px;
+        min-width: 230px; max-width: min(380px, calc(100vw - 36px)); padding: 9px 14px 9px 10px; border-radius: 999px;
+        color: #fff; background: rgba(29, 26, 25, .88); backdrop-filter: blur(8px);
+        box-shadow: 0 10px 30px -8px rgba(0,0,0,.4); font-size: 12.5px; font-weight: 650;
+        opacity: 0; transform: translateY(12px) scale(.96); transition: opacity .25s, transform .25s;
+      }
+      .pill.show { opacity: 1; transform: none; }
+      .pill.party { background: linear-gradient(135deg, #ff5a36, #f43f5e); transform: scale(1.04); }
+      .p-emoji { font-size: 22px; line-height: 1; }
+      .p-main { flex: 1; min-width: 0; }
+      .p-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .p-track { height: 5px; margin-top: 5px; border-radius: 3px; background: rgba(255,255,255,.22); overflow: hidden; }
+      .p-track i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #ff7a45, #f43f5e); transition: width .2s; }
+      .party .p-track i { background: #fff; }
+      .p-dist { font-variant-numeric: tabular-nums; font-weight: 800; opacity: .95; }
       @media (prefers-color-scheme: dark) {
         .nudge { background: #221c1a; color: #f7efe9; box-shadow: 0 24px 60px -12px rgba(0,0,0,.6), 0 0 0 1px rgba(255,106,72,.35); }
         .body, .later { color: #b8aaa1; }
       }
     </style><div class="slot"></div>`;
     (document.body || document.documentElement).append(host);
-    ui = shadow;
+    ui = shadow; // shadow.host is the element, used by teardown()
     return ui;
   }
 
@@ -141,8 +170,77 @@
 
   function teardown() {
     alive = false;
+    ui?.host.remove();
     document.removeEventListener("scroll", onScroll, true);
     for (const t of INPUT_EVENTS) document.removeEventListener(t, noteInput, true);
+  }
+
+  // ---------- live climb overlay ----------
+  // A small pill that shows progress towards the next landmark while you scroll.
+
+  let overlay = null; // { units, ladder: [{emoji, one, meters}] } when enabled
+  let base = { todayM: 0, localPx: 0 }; // last total confirmed by the background
+  let hideTimer = null;
+  let celebrating = false;
+
+  const estimateM = () => base.todayM + (localPx - base.localPx) * M_PER_PX;
+
+  function fmt(m) {
+    if (overlay?.units === "imperial") {
+      const ft = m / 0.3048;
+      return ft < 1000 ? `${Math.round(ft)} ft` : `${(m / 1609.344).toFixed(2)} mi`;
+    }
+    if (m < 1) return `${Math.round(m * 100)} cm`;
+    return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(2)} km`;
+  }
+
+  function pill() {
+    const root = uiRoot();
+    let el = root.querySelector(".pill");
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "pill";
+      el.innerHTML = `<div class="p-emoji"></div><div class="p-main"><div class="p-label"></div><div class="p-track"><i></i></div></div><div class="p-dist"></div>`;
+      root.querySelector(".slot").append(el);
+    }
+    return el;
+  }
+
+  function updateOverlay() {
+    if (!overlay || !IS_TOP || celebrating) return;
+    const m = estimateM();
+    const ladder = overlay.ladder;
+    const i = ladder.findIndex((l) => l.meters > m);
+    const next = ladder[i];
+    const prevM = i > 0 ? ladder[i - 1].meters : 0;
+    const el = pill();
+    el.classList.remove("party");
+    el.querySelector(".p-emoji").textContent = next ? next.emoji : "🚀";
+    el.querySelector(".p-label").textContent = next ? `Next: ${next.one}` : "Off the charts";
+    const progress = next ? (m - prevM) / (next.meters - prevM) : 1;
+    el.querySelector(".p-track i").style.width = `${Math.min(100, Math.max(2, progress * 100)).toFixed(1)}%`;
+    el.querySelector(".p-dist").textContent = fmt(m);
+    show(el, 2500);
+  }
+
+  function celebrate(landmark) {
+    const el = pill();
+    celebrating = true;
+    el.classList.add("party");
+    el.querySelector(".p-emoji").textContent = landmark.emoji;
+    el.querySelector(".p-label").textContent = `You just scrolled past ${landmark.a} ${landmark.one}!`;
+    el.querySelector(".p-track i").style.width = "100%";
+    el.querySelector(".p-dist").textContent = "🎉";
+    show(el, 4000, () => (celebrating = false));
+  }
+
+  function show(el, ms, after) {
+    el.classList.add("show");
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      el.classList.remove("show");
+      after?.();
+    }, ms);
   }
 
   const INPUT_EVENTS = ["wheel", "touchmove", "keydown", "pointerdown"];
@@ -153,4 +251,6 @@
 
   const root = rootEl();
   if (root) lastY.set(root, window.scrollY);
+
+  if (IS_TOP) send({ type: "hello" });
 })();

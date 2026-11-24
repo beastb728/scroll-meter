@@ -1,5 +1,5 @@
 import { dayKey, hourKey, normalizeDomain, getSettings } from "./lib/store.js";
-import { pxToMeters, formatDistance, compare } from "./lib/units.js";
+import { pxToMeters, formatDistance, formatBadge, compare, crossed, LANDMARKS } from "./lib/units.js";
 
 const SCRIPT_ID = "scroll-meter";
 const SCRIPT_FILE = "src/content.js";
@@ -44,11 +44,48 @@ chrome.permissions.onRemoved.addListener(() => syncContentScripts());
 
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   await syncContentScripts();
+  await refreshBadge();
   if (reason === "install") {
     chrome.tabs.create({ url: chrome.runtime.getURL("src/settings/settings.html?welcome=1") });
   }
 });
-chrome.runtime.onStartup.addListener(syncContentScripts);
+chrome.runtime.onStartup.addListener(() => {
+  syncContentScripts();
+  refreshBadge();
+});
+
+// ---------- toolbar badge ----------
+
+async function todayMeters() {
+  const day = dayKey();
+  const { [day]: sites = {} } = await chrome.storage.local.get(day);
+  return pxToMeters(Object.values(sites).reduce((a, b) => a + b, 0));
+}
+
+async function refreshBadge(todayM, settings) {
+  settings ??= await getSettings();
+  if (!settings.badge) return chrome.action.setBadgeText({ text: "" });
+  todayM ??= await todayMeters();
+  await chrome.action.setBadgeBackgroundColor({ color: "#ff5a36" });
+  await chrome.action.setBadgeTextColor?.({ color: "#ffffff" });
+  await chrome.action.setBadgeText({ text: todayM > 0 ? formatBadge(todayM, settings.units) : "" });
+}
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return;
+  // Settings changed, or history was deleted from the settings page.
+  if (changes.settings || Object.keys(changes).some((k) => /^\d{4}-/.test(k) && !changes[k].newValue)) refreshBadge();
+});
+
+// ---------- live overlay ----------
+
+const LADDER = LANDMARKS.filter((l) => l.milestone).map((l) => ({
+  emoji: l.emoji,
+  one: l.one,
+  a: /^[aeiou]/i.test(l.one) ? "an" : "a",
+  meters: l.meters,
+}));
+const overlayFor = (settings) => (settings.overlay ? { units: settings.units, ladder: LADDER } : null);
 
 // ---------- scroll accounting ----------
 
@@ -117,10 +154,27 @@ async function handleScroll(msg, sender) {
   const { day, todayPx } = await addScroll(site, msg.px);
   const settings = await getSettings();
   const todayM = pxToMeters(todayPx);
-  return { todayM, nudge: await maybeNudge(day, todayM, settings) };
+  const passed = crossed(todayM - pxToMeters(msg.px), todayM).at(-1);
+  refreshBadge(todayM, settings);
+  return {
+    todayM,
+    overlay: overlayFor(settings),
+    passed: passed && LADDER.find((l) => l.meters === passed.meters),
+    nudge: await maybeNudge(day, todayM, settings),
+  };
+}
+
+async function handleHello(sender) {
+  if (!(await senderAllowed(sender))) return { stop: true };
+  const settings = await getSettings();
+  return { todayM: await todayMeters(), overlay: overlayFor(settings) };
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === "hello") {
+    handleHello(sender).then(sendResponse, () => sendResponse(null));
+    return true;
+  }
   if (msg?.type !== "scroll") return false;
   const px = Math.round(Number(msg.px));
   if (!Number.isFinite(px) || px <= 0 || px > MAX_BATCH_PX) return false;
