@@ -1,0 +1,72 @@
+<!doctype html>
+<!-- Source for docs/banner.png (2560x840). Open in Chrome, then right-click the canvas and
+     "Save image as". Drawn on canvas so it matches the extension's card style. -->
+<html>
+  <body style="margin: 0; background: #161513">
+    <canvas id="c" width="2560" height="840" style="width: 1280px; height: 420px; display: block"></canvas>
+    <script>
+      const c = document.getElementById("c");
+      const ctx = c.getContext("2d");
+      ctx.scale(2, 2);
+      const W = 1280, H = 420;
+      const TAPE = "#ffcb05", INK = "#161513", RED = "#d93025";
+      const SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif';
+      const MONO = 'ui-monospace, "SF Mono", "JetBrains Mono", "DejaVu Sans Mono", Menlo, monospace';
+
+      ctx.fillStyle = TAPE;
+      ctx.fillRect(0, 0, W, H);
+
+      // Ruler along the top edge, numbered every 10 minor ticks.
+      ctx.fillStyle = INK;
+      for (let i = 0, x = 0; x <= W; i++, x = i * 8) {
+        const major = i % 10 === 0, mid = i % 5 === 0;
+        ctx.fillRect(x, 0, major ? 2 : 1.2, major ? 30 : mid ? 20 : 11);
+        if (major && i) {
+          const n = i / 10;
+          ctx.fillStyle = n % 5 === 0 ? RED : INK;
+          ctx.font = `800 13px ${MONO}`;
+          ctx.fillText(String(n), x + 5, 44);
+          ctx.fillStyle = INK;
+        }
+      }
+
+      // Wordmark + tagline
+      const x = 72;
+      ctx.fillStyle = INK;
+      ctx.font = `900 104px ${SANS}`;
+      ctx.letterSpacing = "-3px";
+      ctx.fillText("Scroll Meter", x - 4, 218);
+      ctx.letterSpacing = "0px";
+      ctx.font = `600 28px ${SANS}`;
+      ctx.fillText("How far did your thumb travel today?", x, 270);
+      ctx.font = `500 18px ${MONO}`;
+      ctx.fillText("A Chrome extension that measures every pixel you scroll.", x, 312);
+
+      // Label-maker strips on the right
+      function strip(text, sx, sy, rot, size) {
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(rot);
+        ctx.font = `800 ${size}px ${MONO}`;
+        const w = ctx.measureText(text).width + size * 1.2;
+        const h = size * 1.9;
+        ctx.fillStyle = INK;
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = TAPE;
+        ctx.fillText(text, size * 0.6, h * 0.68);
+        ctx.restore();
+      }
+      strip("1.22 KM THIS WEEK", 836, 132, -0.03, 26);
+      strip("= 1.5 BURJ KHALIFAS", 860, 200, 0.02, 22);
+      strip("REDDIT ARCHAEOLOGIST", 822, 262, -0.015, 22);
+
+      // Ink band at the bottom
+      ctx.fillStyle = INK;
+      ctx.fillRect(0, H - 54, W, 54);
+      ctx.fillStyle = TAPE;
+      ctx.font = `700 15px ${MONO}`;
+      ctx.letterSpacing = "3px";
+      ctx.fillText("PRIVATE BY DESIGN  ·  OPT-IN PER SITE  ·  NOTHING LEAVES YOUR BROWSER", x, H - 21);
+    </script>
+  </body>
+</html>
